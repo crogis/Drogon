@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">Drogon</string>
     <string name="google_app_id">drogon-141916</string>
+
+    <string-array name="altitude_items">
+        <item>10</item>
+        <item>15</item>
+        <item>20</item>
+    </string-array>
 </resources>

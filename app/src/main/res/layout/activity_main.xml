@@ -5,16 +5,64 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.dji.Drogon.MainActivity">
-
     <FrameLayout
         android:id="@+id/main_fragment"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
+        android:layout_centerInParent="true"
         android:layout_height="match_parent"/>
-
     <FrameLayout
         android:id="@+id/sub_fragment"
         android:layout_width="140dp"
         android:layout_height="100dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"/>
+    <include layout="@layout/toolbar"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_centerInParent="true"
+        android:layout_alignParentStart="true"
+        android:gravity="center|center_vertical"
+        android:layout_marginLeft="10dp">
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="5dp"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/take_off"/>
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="5dp"
+            android:src="@drawable/home"/>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/settings_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerInParent="true"
+            android:src="@drawable/circle"/>
+
+        <ImageButton
+            android:id="@+id/settings_image_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/settings"
+            android:gravity="bottom"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginRight="10dp"/>
+    </RelativeLayout>
+
+
 </RelativeLayout>
