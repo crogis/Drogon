@@ -11,10 +11,14 @@ import android.view.ViewGroup;
 
 import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapFragment extends Fragment {
 
@@ -31,55 +35,26 @@ public class MapFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     super.onCreateView(inflater, container, savedInstanceState);
-
     View v = inflater.inflate(R.layout.fragment_map, container, false);
-    boolean isMainFragment = false;
-    if(getArguments() != null) {
-      isMainFragment = getArguments().getBoolean("isMain");
-    }
-
-    final boolean isMainFragmentFinal = isMainFragment;
-
-    System.out.println("MAP FRAGMENT");
     mapView = (MapView) v.findViewById(R.id.map_view);
     mapView.onCreate(savedInstanceState);
     mapView.onResume();
 
     try {
       MapsInitializer.initialize(getActivity().getApplicationContext());
-      System.out.println("INITIALIZING MAP VIEW");
     } catch (Exception e) {
       e.printStackTrace();
     }
 
     mapView.setClickable(false);
-    mapView.getMapAsync(new OnMapReadyCallback() {
-      @Override
-      public void onMapReady(GoogleMap mMap) {
-        System.out.println("MAP READY!!!");
-        googleMap = mMap;
+    mapView.getMapAsync((mMap) -> {
+      googleMap = mMap;
 
-        googleMap.setOnMapClickListener((point) -> {
-          if(!isMainFragmentFinal) {
-            MainActivity m = (MainActivity)getActivity();
-            m.onFragmentChange();
-          }
-        });
+      LatLng dummyLocation = new LatLng(14.609592, 121.079647);
 
-        // For dropping a marker at a point on the Map
-//        LatLng sydney = new LatLng(-34, 151);
-//        googleMap.addMarker(new MarkerOptions().position(sydney).title("Marker Title").snippet("Marker Description"));
-
-        // For zooming automatically to the location of the marker
-//        CameraPosition cameraPosition = new CameraPosition.Builder().target(sydney).zoom(12).build();
-//        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-      }
+      googleMap.addMarker(new MarkerOptions().position(dummyLocation).title("Test").snippet("Here"));
+      googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dummyLocation, 12.0f));
     });
-
-
-//    SupportMapFragment mapFragment = (SupportMapFragment)(R.id.map_fragment);
-//    mapFragment.getMapAsync(this);
-
     return v;
   }
 

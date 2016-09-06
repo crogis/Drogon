@@ -5,18 +5,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.dji.Drogon.MainActivity">
-    <FrameLayout
-        android:id="@+id/main_fragment"
-        android:orientation="horizontal"
+
+    <RelativeLayout
+        android:id="@+id/parent_fragment_layout"
         android:layout_width="match_parent"
-        android:layout_centerInParent="true"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent">
+        <FrameLayout
+            android:id="@+id/main_fragment"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_centerInParent="true"
+            android:layout_height="match_parent"/>
+        <FrameLayout
+            android:id="@+id/sub_fragment"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
+            android:paddingLeft="2dp"
+            android:paddingBottom="2dp"
+            android:animateLayoutChanges="true"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"/>
+    </RelativeLayout>
+
     <FrameLayout
-        android:id="@+id/sub_fragment"
-        android:layout_width="140dp"
-        android:layout_height="100dp"
+        android:id="@+id/border_layout"
+        android:background="@drawable/border"
+        android:layout_width="142dp"
+        android:layout_height="102dp"
+        android:animateLayoutChanges="true"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"/>
+
     <include layout="@layout/toolbar"/>
 
     <LinearLayout
