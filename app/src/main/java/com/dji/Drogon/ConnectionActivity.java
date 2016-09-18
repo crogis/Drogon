@@ -32,7 +32,7 @@ public class ConnectionActivity extends Activity {
     mBtnOpen.setEnabled(false);
   }
 
-  @OnClick(R.id.settings_image_button) void onButtonOpen(View view) {
+  @OnClick(R.id.btn_open) void onButtonOpen(View view) {
     switch (view.getId()) {
       case R.id.btn_open: {
         break;

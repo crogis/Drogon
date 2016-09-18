@@ -57,24 +57,30 @@ public final class R {
         public static int btn_lock_selector=0x7f020000;
         public static int btn_radio_selector=0x7f020001;
         public static int btn_zoom_selector=0x7f020002;
-        public static int radio_checked=0x7f020003;
-        public static int radio_unchecked=0x7f020004;
+        public static int ic_launcher=0x7f020003;
+        public static int radio_checked=0x7f020004;
+        public static int radio_unchecked=0x7f020005;
     }
     public static final class id {
         public static int bold=0x7f090005;
+        public static int dbg_region=0x7f090009;
         public static int demi=0x7f090002;
-        public static int log_dlg_content=0x7f090009;
-        public static int log_dlg_control=0x7f090006;
-        public static int log_dlg_lock=0x7f090007;
-        public static int log_dlg_rg=0x7f09000a;
-        public static int log_dlg_scroll=0x7f090008;
+        public static int log_dlg_content=0x7f09000d;
+        public static int log_dlg_control=0x7f090007;
+        public static int log_dlg_lock=0x7f090008;
+        public static int log_dlg_rg=0x7f09000e;
+        public static int log_dlg_scroll=0x7f09000c;
         public static int nbold=0x7f090004;
         public static int nlight=0x7f090003;
+        public static int numberPicker1=0x7f09000a;
         public static int pad=0x7f090001;
         public static int phone=0x7f090000;
+        public static int set_sre_button=0x7f09000b;
+        public static int webview=0x7f090006;
     }
     public static final class layout {
-        public static int log_dialog_view=0x7f030000;
+        public static int dialog_login=0x7f030000;
+        public static int log_dialog_view=0x7f030001;
     }
     public static final class raw {
         public static int dock=0x7f060000;
@@ -82,17 +88,17 @@ public final class R {
         public static int flyc_param_infos=0x7f060002;
         public static int flyforbid=0x7f060003;
         public static int gimbal_param_infos=0x7f060004;
-        public static int iframe_1280_3s=0x7f060005;
-        public static int iframe_1280_ins=0x7f060006;
-        public static int iframe_1280x720_3s=0x7f060007;
-        public static int iframe_1280x720_ins=0x7f060008;
-        public static int iframe_1280x720_p4=0x7f060009;
-        public static int iframe_1280x720_wm220=0x7f06000a;
-        public static int iframe_640x480=0x7f06000b;
-        public static int iframe_720x480_wm620=0x7f06000c;
-        public static int iframe_848x480=0x7f06000d;
-        public static int iframe_960_3s=0x7f06000e;
-        public static int iframe_960x720_3s=0x7f06000f;
+        public static int iframe_1280x720_3s=0x7f060005;
+        public static int iframe_1280x720_ins=0x7f060006;
+        public static int iframe_1280x720_p4=0x7f060007;
+        public static int iframe_1280x720_wm220=0x7f060008;
+        public static int iframe_640x480=0x7f060009;
+        public static int iframe_720x480_wm620=0x7f06000a;
+        public static int iframe_848x480=0x7f06000b;
+        public static int iframe_960x720_3s=0x7f06000c;
+        public static int iframe_cam_cap_4p=0x7f06000d;
+        public static int iframe_rec_cap_4p=0x7f06000e;
+        public static int iframe_wm220_1280x720=0x7f06000f;
     }
     public static final class string {
         public static int app_name=0x7f0700c2;
@@ -292,6 +298,7 @@ public final class R {
         public static int dji_check_vision_sensor_reason_front_right=0x7f0700bf;
         public static int dji_check_vision_vision_reason=0x7f0700c0;
         public static int fpv_check_redundancy_failed_when_motor_up=0x7f0700c1;
+        public static int version_name=0x7f0700c5;
     }
     public static final class style {
         /** 
