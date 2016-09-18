@@ -9,33 +9,31 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class ConnectionActivity extends Activity implements View.OnClickListener {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
-  private TextView mTextConnectionStatus;
-  private TextView mTextProduct;
-  private Button mBtnOpen;
+public class ConnectionActivity extends Activity {
+
+  @BindView(R.id.text_connection_status) TextView mTextConnectionStatus;
+  @BindView(R.id.text_product_info) TextView mTextProduct;
+  @BindView(R.id.btn_open) Button mBtnOpen;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_connection);
+
+    ButterKnife.bind(this);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
       ActivityCompat.requestPermissions(this,getPermissions(), 1);
 
-    setContentView(R.layout.activity_connection);
-    initUI();
-  }
-
-  private void initUI() {
-    mTextConnectionStatus = (TextView) findViewById(R.id.text_connection_status);
-    mTextProduct = (TextView) findViewById(R.id.text_product_info);
-    mBtnOpen = (Button) findViewById(R.id.btn_open);
-    mBtnOpen.setOnClickListener(this);
     mBtnOpen.setEnabled(false);
   }
-  @Override
-  public void onClick(View v) {
-    switch (v.getId()) {
+
+  @OnClick(R.id.settings_image_button) void onButtonOpen(View view) {
+    switch (view.getId()) {
       case R.id.btn_open: {
         break;
       }

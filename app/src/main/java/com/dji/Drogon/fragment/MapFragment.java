@@ -20,9 +20,12 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class MapFragment extends Fragment {
 
-  private MapView mapView;
+  @BindView(R.id.map_view) MapView mapView;
   private GoogleMap googleMap;
 
   @Override
@@ -35,8 +38,10 @@ public class MapFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     super.onCreateView(inflater, container, savedInstanceState);
-    View v = inflater.inflate(R.layout.fragment_map, container, false);
-    mapView = (MapView) v.findViewById(R.id.map_view);
+    View view = inflater.inflate(R.layout.fragment_map, container, false);
+
+    ButterKnife.bind(this, view);
+
     mapView.onCreate(savedInstanceState);
     mapView.onResume();
 
@@ -47,15 +52,18 @@ public class MapFragment extends Fragment {
     }
 
     mapView.setClickable(false);
-    mapView.getMapAsync((mMap) -> {
-      googleMap = mMap;
+    mapView.getMapAsync(new OnMapReadyCallback() {
+      @Override
+      public void onMapReady(GoogleMap mMap) {
+        googleMap = mMap;
 
-      LatLng dummyLocation = new LatLng(14.609592, 121.079647);
+        LatLng dummyLocation = new LatLng(14.609592, 121.079647);
 
-      googleMap.addMarker(new MarkerOptions().position(dummyLocation).title("Test").snippet("Here"));
-      googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dummyLocation, 12.0f));
+        googleMap.addMarker(new MarkerOptions().position(dummyLocation).title("Test").snippet("Here"));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dummyLocation, 12.0f));
+      }
     });
-    return v;
+    return view;
   }
 
   @Override

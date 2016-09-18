@@ -22,11 +22,21 @@ import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
 public class MainActivity extends AppCompatActivity {
 
-  private FrameLayout mainLayout, subLayout, borderLayout;
-  private RelativeLayout parentLayout, settingsLayout;
-  private ImageButton settingsImageBtn;
+  @BindView(R.id.main_fragment) FrameLayout mainLayout;
+  @BindView(R.id.sub_fragment) FrameLayout subLayout;
+  @BindView(R.id.border_layout) FrameLayout borderLayout;
+
+  @BindView(R.id.parent_fragment_layout) RelativeLayout parentLayout;
+  @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
+  @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
+
+  @BindView(R.id.toolbar) Toolbar toolbar;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -35,11 +45,14 @@ public class MainActivity extends AppCompatActivity {
       WindowManager.LayoutParams.FLAG_FULLSCREEN);
     setContentView(R.layout.activity_main);
 
+    //used this library to shorten code https://github.com/JakeWharton/butterknife
+    ButterKnife.bind(this);
+
+    //todo remove this since it's already in ConnectionActivity
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
       ActivityCompat.requestPermissions(this,getPermissions(), 1);
 
     initializeToolbar();
-    initializeViews();
 
     Fragment cameraFragment = new CameraFragment();
     Fragment mapFragment = new MapFragment();
@@ -48,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initializeToolbar() {
-    Toolbar toolbar = find(R.id.toolbar);
     // Sets the Toolbar to act as the ActionBar for this Activity window.
     // Make sure the toolbar exists in the activity and is not null
     setSupportActionBar(toolbar);
@@ -58,29 +70,12 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  private void initializeViews() {
-    parentLayout = find(R.id.parent_fragment_layout);
-    mainLayout = find(R.id.main_fragment);
-    subLayout = find(R.id.sub_fragment);
-    borderLayout = find(R.id.border_layout);
-    settingsLayout = find(R.id.settings_layout);
-    settingsImageBtn = find(R.id.settings_image_button);
-
-    setListeners();
+  @OnClick(R.id.settings_image_button) void onSettingsClicked() {
+    createSettingsDialog();
   }
 
-  private void setListeners() {
-    borderLayout.setOnClickListener((view) -> {
-      onFragmentChange();
-    });
-
-    settingsImageBtn.setOnClickListener((view) -> {
-      createSettingsDialog();
-    });
-  }
-
-  public void onFragmentChange() {
-    CustomLayoutParams cp = new CustomLayoutParams(subLayout);
+  @OnClick(R.id.border_layout) void onFragmentChange() {
+    final CustomLayoutParams cp = new CustomLayoutParams(subLayout);
     FillScreenAnimation fillScreenAnimation =
             new FillScreenAnimation(
                     subLayout,
@@ -89,17 +84,13 @@ public class MainActivity extends AppCompatActivity {
                     mainLayout.getWidth(),
                     cp.width);
     fillScreenAnimation.setAnimationListener(new Animation.AnimationListener() {
-      @Override
-      public void onAnimationStart(Animation animation) {}
-
+      @Override public void onAnimationStart(Animation animation) {}
+      @Override public void onAnimationRepeat(Animation animation) {}
       @Override
       public void onAnimationEnd(Animation animation) {
         switchViews(cp);
         borderLayout.setEnabled(true);
       }
-
-      @Override
-      public void onAnimationRepeat(Animation animation) {}
     });
     fillScreenAnimation.setDuration(500);
     subLayout.startAnimation(fillScreenAnimation);
@@ -132,12 +123,15 @@ public class MainActivity extends AppCompatActivity {
 
     builder.setCancelable(false);
     builder.setView(v);
-    AlertDialog d = builder.create();
+    final AlertDialog dialog = builder.create();
     ImageButton btn = (ImageButton)v.findViewById(R.id.close_btn);
-    btn.setOnClickListener((l) -> {
-      d.dismiss();
+    btn.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        dialog.dismiss();
+      }
     });
-    d.show();
+    dialog.show();
   }
 
   private void addFragmentToMain(Fragment main) {
@@ -158,11 +152,6 @@ public class MainActivity extends AppCompatActivity {
 
   public <T> boolean isNull(T i) {
     return i == null;
-  }
-
-  @SuppressWarnings("unchecked")
-  public <T extends View> T find(int id) {
-    return (T)findViewById(id);
   }
 
   private String[] getPermissions() {
