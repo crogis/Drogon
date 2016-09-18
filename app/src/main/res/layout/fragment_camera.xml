@@ -4,4 +4,16 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="@android:color/black">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/border2"/>
+
+    <TextureView
+        android:id="@+id/video_surface_texture_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:background="@drawable/border2"
+        android:visibility="invisible"/>
 </LinearLayout>

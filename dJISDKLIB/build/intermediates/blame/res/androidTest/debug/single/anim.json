@@ -48,11 +48,11 @@
         "source": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/bundles/debug/res/anim/core_push_up_out.xml"
     },
     {
-        "merged": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/res/merged/androidTest/debug/anim/core_push_right_out.xml",
-        "source": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/bundles/debug/res/anim/core_push_right_out.xml"
-    },
-    {
         "merged": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/res/merged/androidTest/debug/anim/core_push_up_in.xml",
         "source": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/bundles/debug/res/anim/core_push_up_in.xml"
+    },
+    {
+        "merged": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/res/merged/androidTest/debug/anim/core_push_right_out.xml",
+        "source": "/Users/regine/Documents/pworkspace/Drogon/dJISDKLIB/build/intermediates/bundles/debug/res/anim/core_push_right_out.xml"
     }
 ]

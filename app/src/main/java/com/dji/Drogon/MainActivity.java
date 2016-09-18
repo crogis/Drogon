@@ -38,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.toolbar) Toolbar toolbar;
 
+  Boolean isCameraFragmentMain = true;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -47,10 +49,6 @@ public class MainActivity extends AppCompatActivity {
 
     //used this library to shorten code https://github.com/JakeWharton/butterknife
     ButterKnife.bind(this);
-
-    //todo remove this since it's already in ConnectionActivity
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-      ActivityCompat.requestPermissions(this,getPermissions(), 1);
 
     initializeToolbar();
 
@@ -84,7 +82,12 @@ public class MainActivity extends AppCompatActivity {
                     mainLayout.getWidth(),
                     cp.width);
     fillScreenAnimation.setAnimationListener(new Animation.AnimationListener() {
-      @Override public void onAnimationStart(Animation animation) {}
+      @Override public void onAnimationStart(Animation animation) {
+        int visibility = isCameraFragmentMain ? View.INVISIBLE : View.VISIBLE;
+        settingsLayout.setVisibility(visibility);
+
+        isCameraFragmentMain = !isCameraFragmentMain;
+      }
       @Override public void onAnimationRepeat(Animation animation) {}
       @Override
       public void onAnimationEnd(Animation animation) {
@@ -110,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
     FrameLayout temp = subLayout;
     subLayout = mainLayout;
     mainLayout = temp;
+
   }
 
   private void createSettingsDialog() {
@@ -152,17 +156,5 @@ public class MainActivity extends AppCompatActivity {
 
   public <T> boolean isNull(T i) {
     return i == null;
-  }
-
-  private String[] getPermissions() {
-    return new String[]{
-      Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.VIBRATE,
-      Manifest.permission.INTERNET, Manifest.permission.ACCESS_WIFI_STATE,
-      Manifest.permission.WAKE_LOCK, Manifest.permission.ACCESS_COARSE_LOCATION,
-      Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.ACCESS_FINE_LOCATION,
-      Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS,
-      Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.SYSTEM_ALERT_WINDOW,
-      Manifest.permission.READ_PHONE_STATE
-    };
   }
 }

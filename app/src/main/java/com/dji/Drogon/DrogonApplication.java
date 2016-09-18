@@ -7,15 +7,15 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import dji.common.error.DJIError;
-import dji.common.error.DJISDKError;
+import dji.sdk.Camera.DJICamera;
+import dji.sdk.Products.DJIAircraft;
+import dji.sdk.Products.DJIHandHeld;
+import dji.sdk.SDKManager.DJISDKManager;
+import dji.sdk.SDKManager.DJISDKManager.*;
 import dji.sdk.base.DJIBaseComponent;
 import dji.sdk.base.DJIBaseProduct;
-import dji.sdk.camera.DJICamera;
-import dji.sdk.products.DJIAircraft;
-import dji.sdk.products.DJIHandHeld;
-import dji.sdk.sdkmanager.DJISDKManager;
-import dji.sdk.sdkmanager.DJISDKManager.*;
+import dji.sdk.base.DJIError;
+import dji.sdk.base.DJISDKError;
 
 public class DrogonApplication extends Application {
 
