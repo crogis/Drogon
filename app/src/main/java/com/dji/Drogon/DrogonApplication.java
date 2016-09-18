@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.squareup.otto.Bus;
+
 import dji.sdk.Camera.DJICamera;
 import dji.sdk.Products.DJIAircraft;
 import dji.sdk.Products.DJIHandHeld;
@@ -25,12 +27,21 @@ public class DrogonApplication extends Application {
 
   private Handler mHandler;
 
+  private static Bus bus;
+
   @Override
   public void onCreate() {
     super.onCreate();
     mHandler = new Handler(Looper.getMainLooper());
     //used to start SDK services and initiate SDK
     DJISDKManager.getInstance().initSDKManager(this, mDJISDKManagerCallback);
+  }
+
+  public static Bus getBus() {
+    if(bus == null) {
+      bus = new Bus();
+    }
+    return bus;
   }
 
   /*When starting SDK services, an instance of interface of DJISDKManagerCallback will be used to

@@ -1,9 +1,6 @@
 package com.dji.Drogon;
 
-import android.Manifest;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -18,9 +15,11 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
 import com.dji.Drogon.anim.FillScreenAnimation;
+import com.dji.Drogon.event.FragmentChange;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
+import com.squareup.otto.Bus;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.parent_fragment_layout) RelativeLayout parentLayout;
   @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
+
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
@@ -83,10 +83,10 @@ public class MainActivity extends AppCompatActivity {
                     cp.width);
     fillScreenAnimation.setAnimationListener(new Animation.AnimationListener() {
       @Override public void onAnimationStart(Animation animation) {
-        int visibility = isCameraFragmentMain ? View.INVISIBLE : View.VISIBLE;
-        settingsLayout.setVisibility(visibility);
-
         isCameraFragmentMain = !isCameraFragmentMain;
+        int visibility = isCameraFragmentMain ? View.VISIBLE: View.INVISIBLE;
+        settingsLayout.setVisibility(visibility);
+        DrogonApplication.getBus().post(new FragmentChange(isCameraFragmentMain));
       }
       @Override public void onAnimationRepeat(Animation animation) {}
       @Override

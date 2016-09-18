@@ -13,6 +13,8 @@ import android.widget.Toast;
 
 import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.R;
+import com.dji.Drogon.event.FragmentChange;
+import com.squareup.otto.Subscribe;
 
 import dji.sdk.Camera.DJICamera;
 import dji.sdk.Codec.DJICodecManager;
@@ -29,6 +31,9 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
 
   @BindView(R.id.video_surface_texture_view) TextureView videoSurfaceTextureView;
 
+  private boolean isCameraFragmentMain = true;
+  private int originalWidth, originalHeight = 0;
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -43,6 +48,8 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     View view = inflater.inflate(R.layout.fragment_camera, container, false);
     ButterKnife.bind(this, view);
 
+    DrogonApplication.getBus().register(this);
+
     videoSurfaceTextureView.setSurfaceTextureListener(this);
 
     receivedVideoDataCallback = new DJICamera.CameraReceivedVideoDataCallback() {
@@ -50,24 +57,48 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
       public void onResult(byte[] videoBuffer, int size) {
         //send the raw H264 video data to codec manager for decoding
         if(isNotNull(codecManager)) codecManager.sendDataToDecoder(videoBuffer, size);
-        else Log.e(TAG, "codecManager is null");
+        else {
+          showToast("codecManager is null");
+          Log.e(TAG, "codecManager is null");
+        }
       }
     };
 
     return view;
   }
 
+  @Subscribe
+  public void onFragmentChange(FragmentChange change) {
+    System.out.println("ON FRAGMENT CHANGE " + videoSurfaceTextureView.getWidth());
+    isCameraFragmentMain = change.getIsCameraFragmentMain();
+    if(isNotNull(codecManager)) {
+      codecManager.cleanSurface();
+      codecManager = null;
+    }
+  }
+
   @Override
   public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+    showToast("SURFACE TEXTURE AVAILABLE");
     Log.e(TAG, "onSurfaceTextureAvailable");
     if(isNull(codecManager)) {
+      originalWidth = width;
+      originalHeight = height;
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
   }
 
   @Override
   public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-    Log.e(TAG, "onSurfaceTextureSizeChanged");
+    Log.e(TAG, "onSurfaceTextureSizeChanged " + " width: " +  width + " width: " + height);
+
+    boolean mainCondition = isNull(codecManager);
+    boolean condition1 = mainCondition && isCameraFragmentMain && width == originalWidth && height == originalHeight;
+    boolean condition2 = mainCondition && !isCameraFragmentMain;
+    if (condition1 || condition2) {
+      showToast("width: " + width + " height: " + height);
+      codecManager = new DJICodecManager(getContext(), surface, width, height);
+    }
   }
 
   @Override
@@ -104,6 +135,13 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     }
   }
 
+  private void uninitPreviewer() {
+    DJICamera camera = DrogonApplication.getCameraInstance();
+    if(isNotNull(camera)) {
+      camera.setDJICameraReceivedVideoDataCallback(null);
+    }
+  }
+
   @Override
   public void onResume() {
     Log.e(TAG, "onResume");
@@ -112,6 +150,12 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     if(isNull(videoSurfaceTextureView)) {
       Log.e(TAG, "mVideoSurface is null");
     }
+  }
+
+  @Override
+  public void onPause() {
+    super.onPause();
+    DrogonApplication.getBus().unregister(this);
   }
 
   public void showToast(String msg) {

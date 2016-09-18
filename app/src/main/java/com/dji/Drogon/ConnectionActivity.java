@@ -38,7 +38,8 @@ public class ConnectionActivity extends Activity {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
       ActivityCompat.requestPermissions(this,getPermissions(), 1);
 
-    openButton.setEnabled(true);
+//    openButton.setEnabled(true);
+    openButton.setEnabled(false);
 
     IntentFilter filter = new IntentFilter();
     filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE);
@@ -67,7 +68,9 @@ public class ConnectionActivity extends Activity {
       textConnectionStatus = getString(R.string.connection_loose);
     }
     Log.v(TAG, "refreshSDK: " + isProductConnected);
+
     openButton.setEnabled(isProductConnected);
+
     productInfoTextView.setText(textProduct);
     connectionStatusTextView.setText(textConnectionStatus);
   }
