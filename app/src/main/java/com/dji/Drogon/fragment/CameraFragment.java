@@ -48,8 +48,6 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     View view = inflater.inflate(R.layout.fragment_camera, container, false);
     ButterKnife.bind(this, view);
 
-    DrogonApplication.getBus().register(this);
-
     videoSurfaceTextureView.setSurfaceTextureListener(this);
 
     receivedVideoDataCallback = new DJICamera.CameraReceivedVideoDataCallback() {
@@ -146,6 +144,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   public void onResume() {
     Log.e(TAG, "onResume");
     super.onResume();
+    DrogonApplication.getBus().register(this);
     onProductChange();
     if(isNull(videoSurfaceTextureView)) {
       Log.e(TAG, "mVideoSurface is null");
@@ -155,7 +154,11 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   @Override
   public void onPause() {
     super.onPause();
-    DrogonApplication.getBus().unregister(this);
+    try {
+      DrogonApplication.getBus().unregister(this);
+    } catch(Exception e) {
+      Log.e(TAG, "Unable to unregister fragment: " + e.getMessage());
+    }
   }
 
   public void showToast(String msg) {
