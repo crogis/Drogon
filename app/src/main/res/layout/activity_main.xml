@@ -1,105 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<RelativeLayout style="@style/MatchParent"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
     tools:context="com.dji.Drogon.MainActivity">
 
-    <RelativeLayout
-        android:id="@+id/parent_fragment_layout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <FrameLayout
+    <RelativeLayout style="@style/MatchParent"
+        android:id="@+id/parent_fragment_layout">
+        <FrameLayout style="@style/MatchParent.Horizontal"
             android:id="@+id/main_fragment"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_centerInParent="true"
-            android:layout_height="match_parent"/>
-        <FrameLayout
-            android:id="@+id/sub_fragment"
-            android:layout_width="140dp"
-            android:layout_height="100dp"
-            android:paddingLeft="2dp"
-            android:paddingBottom="2dp"
-            android:animateLayoutChanges="true"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"/>
+            android:layout_centerInParent="true"/>
+        <FrameLayout style="@style/SubFragmentLayout"
+            android:id="@+id/sub_fragment"/>
     </RelativeLayout>
 
-    <FrameLayout
+    <FrameLayout style="@style/FrameLayoutBorder"
         android:id="@+id/border_layout"
-        android:background="@drawable/border"
-        android:layout_width="142dp"
-        android:layout_height="102dp"
-        android:animateLayoutChanges="true"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"/>
+        android:background="@drawable/border"/>
 
     <include layout="@layout/toolbar"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_centerInParent="true"
-        android:orientation="horizontal">
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.125"
-            android:orientation="vertical"
-            android:layout_centerInParent="true"
-            android:layout_alignParentStart="true"
+    <LinearLayout style="@style/MatchParent.Horizontal"
+        android:layout_centerInParent="true">
+        <LinearLayout style="@style/LeftRightLayout"
             android:gravity="center|center_vertical">
-            <!--android:layout_marginLeft="10dp">-->
-            <ImageButton
+            <ImageButton style="@style/TakeOffHomeButton"
                 android:id="@+id/take_off_image_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:padding="10dp"
-                android:layout_marginBottom="20dp"
-                android:scaleType="fitCenter"
                 android:background="@drawable/circle_bg"
-                android:src="@drawable/take_off"/>
-            <ImageButton
+                android:src="@drawable/take_off"
+                android:layout_marginBottom="20dp"/>
+            <ImageButton style="@style/TakeOffHomeButton"
                 android:id="@+id/go_home_image_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:padding="10dp"
-                android:scaleType="fitCenter"
                 android:background="@drawable/circle_bg"
                 android:src="@drawable/home"/>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_weight="0.75"
-            android:layout_height="match_parent"/>
-        <RelativeLayout
+        <LinearLayout style="@style/CenterLayout"/>
+        <RelativeLayout style="@style/LeftRightLayout"
             android:id="@+id/settings_layout"
-            android:layout_width="0dp"
-            android:layout_weight="0.125"
-            android:layout_height="match_parent"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-            <ImageButton
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerInParent="true"
+            android:gravity="center_horizontal">
+            <ImageButton style="@style/CaptureImageButton"
                 android:background="@drawable/capture_btn"/>
-            <ImageButton
+            <ImageButton style="@style/SettingsImageButton"
                 android:id="@+id/settings_image_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@android:color/transparent"
-                android:scaleType="fitCenter"
                 android:src="@drawable/settings"
-                android:layout_centerHorizontal="true"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true"
-                android:padding="10dp"
-                android:layout_marginBottom="10dp"/>
+                android:background="@android:color/transparent"/>
         </RelativeLayout>
     </LinearLayout>
-
 </RelativeLayout>

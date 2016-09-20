@@ -1,18 +1,115 @@
 <resources>
+  <!-- Base application theme. -->
+  <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <!-- Customize your theme here. -->
+    <item name="colorPrimary">@color/colorPrimary</item>
+    <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+    <item name="colorAccent">@color/colorAccent</item>
+  </style>
 
-    <!-- Base application theme. -->
-    <!--<style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">-->
-        <!--&lt;!&ndash; Customize your theme here. &ndash;&gt;-->
-        <!--<item name="colorPrimary">@color/colorPrimary</item>-->
-        <!--<item name="colorPrimaryDark">@color/colorPrimaryDark</item>-->
-        <!--<item name="colorAccent">@color/colorAccent</item>-->
-    <!--</style>-->
+  <style name="MatchParent">
+    <item name="android:layout_height">match_parent</item>
+    <item name="android:layout_width">match_parent</item>
+  </style>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-    </style>
+  <style name="MatchParent.Horizontal">
+    <item name="android:orientation">horizontal</item>
+  </style>
+
+  <style name="MatchParent.Vertical">
+    <item name="android:orientation">vertical</item>
+  </style>
+
+  <style name="WrapContent">
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_width">wrap_content</item>
+  </style>
+
+  <style name="WrapContent.Horizontal">
+    <item name="android:orientation">horizontal</item>
+  </style>
+
+  <style name="HWrapWMatch">
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_width">match_parent</item>
+  </style>
+
+  <!-- activity_main -->
+  <style name="SubFragmentLayout">
+    <item name="android:layout_height">100dp</item>
+    <item name="android:layout_width">140dp</item>
+    <item name="android:paddingLeft">2dp</item>
+    <item name="android:paddingBottom">2dp</item>
+    <item name="android:animateLayoutChanges">true</item>
+    <item name="android:layout_alignParentBottom">true</item>
+    <item name="android:layout_alignParentLeft">true</item>
+  </style>
+
+  <style name="FrameLayoutBorder">
+    <item name="android:layout_height">102dp</item>
+    <item name="android:layout_width">142dp</item>
+    <item name="android:animateLayoutChanges">true</item>
+    <item name="android:layout_alignParentBottom">true</item>
+    <item name="android:layout_alignParentLeft">true</item>
+  </style>
+
+  <style name="LeftRightLayout" parent="MatchParent.Vertical">
+    <item name="android:layout_width">0dp</item>
+    <item name="android:layout_weight">0.125</item>
+  </style>
+  <style name="CenterLayout" parent="MatchParent">
+    <item name="android:layout_width">0dp</item>
+    <item name="android:layout_weight">0.75</item>
+  </style>
+
+  <style name="TakeOffHomeButton">
+    <item name="android:layout_height">40dp</item>
+    <item name="android:layout_width">40dp</item>
+    <item name="android:padding">10dp</item>
+    <item name="android:scaleType">fitCenter</item>
+  </style>
+
+  <style name="CaptureImageButton">
+    <item name="android:layout_height">45dp</item>
+    <item name="android:layout_width">45dp</item>
+    <item name="android:layout_alignParentEnd">true</item>
+    <item name="android:layout_centerInParent">true</item>
+  </style>
+  <style name="SettingsImageButton">
+    <item name="android:layout_height">40dp</item>
+    <item name="android:layout_width">40dp</item>
+    <item name="android:scaleType">fitCenter</item>
+    <item name="android:layout_centerHorizontal">true</item>
+    <item name="android:layout_alignParentBottom">true</item>
+    <item name="android:layout_alignParentEnd">true</item>
+    <item name="android:padding">10dp</item>
+    <item name="android:layout_marginBottom">10dp</item>
+  </style>
+
+  <!--toolbar.xml-->
+  <style name="ToolbarStartLayout" parent="WrapContent.Horizontal">
+    <item name="android:layout_gravity">start</item>
+    <item name="android:padding">10dp</item>
+  </style>
+  <style name="ConnectionTextView" parent="WrapContent">
+    <item name="android:layout_height">20dp</item>
+  </style>
+
+  <style name="ToolbarEndLayout" parent="WrapContent.Horizontal">
+    <item name="android:layout_gravity">end</item>
+    <item name="android:padding">10dp</item>
+  </style>
+
+  <style name="ToolbarImageView">
+    <item name="android:layout_height">20dp</item>
+    <item name="android:layout_width">20dp</item>
+    <item name="android:layout_marginRight">5dp</item>
+  </style>
+  <style name="ToolbarImageViewConnection">
+    <item name="android:layout_height">20dp</item>
+    <item name="android:layout_width">20dp</item>
+  </style>
+  <style name="ToolbarTextView" parent="WrapContent">
+    <item name="android:layout_height">20dp</item>
+  </style>
 </resources>

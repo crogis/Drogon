@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-    <TextView
+<RelativeLayout style="@style/MatchParent.Vertical"
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools">
+    <TextView style="@style/WrapContent"
         android:id="@+id/connection_status_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Status: No Product Connected"
         android:textColor="@android:color/black"
@@ -15,19 +11,16 @@
         android:textStyle="bold"
         android:layout_alignBottom="@+id/product_info_text_view"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="89dp" />
-    <TextView
+        android:layout_marginBottom="89dp"/>
+    <TextView style="@style/WrapContent"
         android:id="@+id/product_info_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="270dp"
         android:text="@string/product_information"
         android:textColor="@android:color/black"
         android:textSize="20dp"
         android:gravity="center"
-        android:textStyle="bold"
-        />
+        android:textStyle="bold"/>
     <Button
         android:id="@+id/open_button"
         android:layout_width="150dp"
@@ -39,9 +32,7 @@
         android:textColor="@android:color/white"
         android:textSize="20dp"
         />
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <TextView style="@style/WrapContent"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="@string/app_name"
         android:id="@+id/textView"

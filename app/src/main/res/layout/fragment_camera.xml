@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="horizontal"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
+              style="@style/MatchParent.Horizontal"
               android:background="@android:color/black">
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_weight="0.125"
-        android:layout_height="match_parent"/>
-    <TextureView
-        android:id="@+id/video_surface_texture_view"
-        android:layout_width="0dp"
-        android:layout_weight="0.75"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"/>
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_weight="0.125"
-        android:layout_height="match_parent"/>
+  <LinearLayout style="@style/LeftRightLayout"/>
+  <TextureView style="@style/CenterLayout"
+      android:id="@+id/video_surface_texture_view"
+      android:layout_gravity="center"/>
+  <LinearLayout style="@style/LeftRightLayout"/>
 </LinearLayout>

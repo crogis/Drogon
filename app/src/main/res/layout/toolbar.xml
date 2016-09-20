@@ -1,106 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        android:background="#80000000"
-        android:layout_alignParentTop="true">
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="start"
-            android:padding="10dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:text="Connection Lost"/>
+              style="@style/MatchParent.Vertical">
+    <android.support.v7.widget.Toolbar style="@style/HWrapWMatch"
+      android:id="@+id/toolbar"
+      android:background="#80000000">
+        <LinearLayout style="@style/ToolbarStartLayout">
+            <TextView style="@style/ConnectionTextView"
+              android:text="Connection Lost"/>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="end"
-            android:padding="10dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginRight="5dp"
-                android:src="@drawable/battery"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:text="100%"/>
+        <LinearLayout style="@style/ToolbarEndLayout">
+            <ImageView style="@style/ToolbarImageView"
+              android:src="@drawable/battery"/>
+            <TextView style="@style/ToolbarTextView"
+              android:text="100%"/>
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="end"
-            android:padding="10dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginRight="5dp"
-                android:src="@drawable/hd"/>
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/connection"/>
+        <LinearLayout style="@style/ToolbarEndLayout">
+            <ImageView style="@style/ToolbarImageView"
+              android:src="@drawable/hd"/>
+            <ImageView style="@style/ToolbarImageViewConnection"
+              android:src="@drawable/connection"/>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="end"
-            android:padding="10dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginRight="5dp"
-                android:src="@drawable/remote_control"/>
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/connection"/>
+        <LinearLayout style="@style/ToolbarEndLayout">
+            <ImageView style="@style/ToolbarImageView"
+              android:src="@drawable/remote_control"/>
+            <ImageView style="@style/ToolbarImageViewConnection"
+              android:src="@drawable/connection"/>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="end"
-            android:padding="10dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginRight="5dp"
-                android:src="@drawable/satellite"/>
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/connection"/>
+        <LinearLayout style="@style/ToolbarEndLayout">
+            <ImageView style="@style/ToolbarImageView"
+              android:src="@drawable/satellite"/>
+            <ImageView style="@style/ToolbarImageViewConnection"
+              android:src="@drawable/connection"/>
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="end"
-            android:padding="10dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginRight="5dp"
-                android:src="@drawable/drone"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:text="OTPI"/>
+        <LinearLayout style="@style/ToolbarEndLayout">
+            <ImageView style="@style/ToolbarImageView"
+              android:src="@drawable/drone"/>
+            <TextView style="@style/ToolbarTextView"
+              android:text="OTPI"/>
         </LinearLayout>
     </android.support.v7.widget.Toolbar>
 </LinearLayout>
