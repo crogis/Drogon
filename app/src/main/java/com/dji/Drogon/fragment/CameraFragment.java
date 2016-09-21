@@ -32,6 +32,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   @BindView(R.id.video_surface_texture_view) TextureView videoSurfaceTextureView;
 
   private boolean isCameraFragmentMain = true;
+  //Height and width of the full screen
   private int originalWidth, originalHeight = 0;
 
   @Override
@@ -77,7 +78,6 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
 
   @Override
   public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-    showToast("SURFACE TEXTURE AVAILABLE");
     Log.e(TAG, "onSurfaceTextureAvailable");
     if(isNull(codecManager)) {
       originalWidth = width;
@@ -94,7 +94,6 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     boolean condition1 = mainCondition && isCameraFragmentMain && width == originalWidth && height == originalHeight;
     boolean condition2 = mainCondition && !isCameraFragmentMain;
     if (condition1 || condition2) {
-      showToast("width: " + width + " height: " + height);
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
   }

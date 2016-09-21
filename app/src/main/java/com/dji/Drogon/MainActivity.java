@@ -16,6 +16,7 @@ import android.widget.RelativeLayout;
 
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.event.FragmentChange;
+import com.dji.Drogon.event.TakeOffClicked;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
@@ -72,6 +73,10 @@ public class MainActivity extends AppCompatActivity {
 
   @OnClick(R.id.settings_image_button) void onSettingsClicked() {
     createSettingsDialog();
+  }
+
+  @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
+    DrogonApplication.getBus().post(new TakeOffClicked());
   }
 
   @OnClick(R.id.border_layout) void onFragmentChange() {
