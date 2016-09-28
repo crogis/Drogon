@@ -139,13 +139,37 @@ public class MapFragment extends Fragment {
     }
   };
 
+  private void markHome(LatLng point) {
+    markLocation(point, R.drawable.green_circle);
+  }
+
   private void markWaypoint(LatLng point){
+    markLocation(point, R.drawable.red_circle);
+  }
+
+  private void markLocation(LatLng point, int pointResource) {
     //Create MarkerOptions object
     MarkerOptions markerOptions = new MarkerOptions();
     markerOptions.position(point);
-    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.map_marker));
+    markerOptions.icon(BitmapDescriptorFactory.fromResource(pointResource));
+    markerOptions.anchor((float)0.5, (float)0.5);
     Marker marker = googleMap.addMarker(markerOptions);
     waypointMarkers.put(waypointMarkers.size(), marker);
+
+    addLines();
+  }
+
+  private void addLines() {
+
+    PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
+    for (int z = 0; z < waypointMarkers.size(); z++) {
+      LatLng point = waypointMarkers.get(z).getPosition();
+      options.add(point);
+    }
+    googleMap.addPolyline(options);
+//    PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
+//    options.add(point);
+//    googleMap.addPolyline(options);
   }
 
   private MissionProgressStatusCallback missionProgressStatusCallback = new MissionProgressStatusCallback() {
@@ -212,7 +236,7 @@ public class MapFragment extends Fragment {
   public void onTakeOffClicked(TakeOffClicked clicked) {
     configWayPointMission();
     prepareWayPointMission();
-    PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+    PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
     for (int z = 0; z < waypointMarkers.size(); z++) {
       LatLng point = waypointMarkers.get(z).getPosition();
       options.add(point);
@@ -272,6 +296,7 @@ public class MapFragment extends Fragment {
       //todo find a way to not add a position
       LatLng defaultPosition = new LatLng(14.609592, 121.079647);
       camUpdate = CameraUpdateFactory.newLatLngZoom(defaultPosition, zoomLevel);
+      markHome(defaultPosition);
     }
     googleMap.moveCamera(camUpdate);
 
