@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.toolbar) Toolbar toolbar;
 
-  Boolean isCameraFragmentMain = true;
+  Boolean isMapFragmentMain = true;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
 
     Fragment cameraFragment = new CameraFragment();
     Fragment mapFragment = new MapFragment();
-    addFragmentToMain(cameraFragment);
-    addFragmentToSub(mapFragment);
+    addFragmentToMain(mapFragment);
+    addFragmentToSub(cameraFragment);
   }
 
   private void initializeToolbar() {
@@ -90,14 +90,14 @@ public class MainActivity extends AppCompatActivity {
                     cp.width);
     fillScreenAnimation.setAnimationListener(new Animation.AnimationListener() {
       @Override public void onAnimationStart(Animation animation) {
-        isCameraFragmentMain = !isCameraFragmentMain;
-        if(!isCameraFragmentMain) settingsLayout.setVisibility(View.INVISIBLE);
-        DrogonApplication.getBus().post(new FragmentChange(isCameraFragmentMain));
+        isMapFragmentMain = !isMapFragmentMain;
+        if(!isMapFragmentMain) settingsLayout.setVisibility(View.VISIBLE);
+        DrogonApplication.getBus().post(new FragmentChange(isMapFragmentMain));
       }
       @Override public void onAnimationRepeat(Animation animation) {}
       @Override
       public void onAnimationEnd(Animation animation) {
-        if(isCameraFragmentMain) settingsLayout.setVisibility(View.VISIBLE);
+        if(isMapFragmentMain) settingsLayout.setVisibility(View.INVISIBLE);
         switchViews(cp);
         borderLayout.setEnabled(true);
       }

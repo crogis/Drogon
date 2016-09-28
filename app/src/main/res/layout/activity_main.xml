@@ -36,7 +36,8 @@
         <LinearLayout style="@style/CenterLayout"/>
         <RelativeLayout style="@style/LeftRightLayout"
             android:id="@+id/settings_layout"
-            android:gravity="center_horizontal">
+            android:gravity="center_horizontal"
+            android:visibility="invisible">
             <ImageButton style="@style/CaptureImageButton"
                 android:background="@drawable/capture_btn"/>
             <ImageButton style="@style/SettingsImageButton"

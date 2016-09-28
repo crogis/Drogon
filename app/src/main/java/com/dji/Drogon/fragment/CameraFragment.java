@@ -31,7 +31,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
 
   @BindView(R.id.video_surface_texture_view) TextureView videoSurfaceTextureView;
 
-  private boolean isCameraFragmentMain = true;
+  private boolean isMapFragmentMain = true;
   //Height and width of the full screen
   private int originalWidth, originalHeight = 0;
 
@@ -69,7 +69,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   @Subscribe
   public void onFragmentChange(FragmentChange change) {
     System.out.println("ON FRAGMENT CHANGE " + videoSurfaceTextureView.getWidth());
-    isCameraFragmentMain = change.getIsCameraFragmentMain();
+    isMapFragmentMain = change.getIsCameraFragmentMain();
     if(isNotNull(codecManager)) {
       codecManager.cleanSurface();
       codecManager = null;
@@ -91,8 +91,8 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     Log.e(TAG, "onSurfaceTextureSizeChanged " + " width: " +  width + " width: " + height);
 
     boolean mainCondition = isNull(codecManager);
-    boolean condition1 = mainCondition && isCameraFragmentMain && width == originalWidth && height == originalHeight;
-    boolean condition2 = mainCondition && !isCameraFragmentMain;
+    boolean condition1 = mainCondition && isMapFragmentMain && width == originalWidth && height == originalHeight;
+    boolean condition2 = mainCondition && !isMapFragmentMain;
     if (condition1 || condition2) {
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
