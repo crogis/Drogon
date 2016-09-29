@@ -69,7 +69,7 @@ public class MapFragment extends Fragment {
   private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
 
   private float missionAltitude = 10.0f;
-  private float missionSpeed = 10.0f;
+  private float missionSpeed = 1.0f; // 1m/s
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;

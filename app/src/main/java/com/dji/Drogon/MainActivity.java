@@ -1,6 +1,7 @@
 package com.dji.Drogon;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -12,8 +13,11 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
+import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.event.FragmentChange;
 import com.dji.Drogon.event.TakeOffClicked;
@@ -38,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.go_home_image_button) ImageButton goHomeImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
+
+  @BindView(R.id.dropdown_notification_layout) LinearLayout notificationLayout;
+  @BindView(R.id.notification_text_view) TextView notificationTextView;
 
   Boolean isMapFragmentMain = true;
 
@@ -76,7 +83,8 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
-    DrogonApplication.getBus().post(new TakeOffClicked());
+    showToast("Hello World!");
+    //    DrogonApplication.getBus().post(new TakeOffClicked());
   }
 
   @OnClick(R.id.border_layout) void onFragmentChange() {
@@ -143,6 +151,21 @@ public class MainActivity extends AppCompatActivity {
       }
     });
     dialog.show();
+  }
+
+  public void showToast(String message) {
+    if(notificationLayout.getVisibility() == View.GONE) {
+      ExpandCollapseAnimation enterAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 0);
+      notificationLayout.startAnimation(enterAnimation);
+      notificationTextView.setText(message);
+      new Handler().postDelayed(new Runnable() {
+        @Override
+        public void run() {
+          ExpandCollapseAnimation exitAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 1);
+          notificationLayout.startAnimation(exitAnimation);
+        }
+      }, 3500);
+    }
   }
 
   private void addFragmentToMain(Fragment main) {
