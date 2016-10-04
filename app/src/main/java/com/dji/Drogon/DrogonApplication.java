@@ -123,7 +123,8 @@ public class DrogonApplication extends Application {
   }
 
   public static boolean isAircraftConnected() {
-    return getProductInstance() != null && getProductInstance() instanceof DJIAircraft;
+    DJIBaseProduct product = getProductInstance();
+    return product != null && product.isConnected() && product instanceof DJIAircraft;
   }
 
   public static boolean isHandHeldConnected() {

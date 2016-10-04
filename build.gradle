@@ -24,6 +24,6 @@ task clean(type: Delete) {
 
 task run(type: Exec, dependsOn: ':app:installDebug') {
     def adb = "$System.env.ANDROID_HOME/platform-tools/adb"
-    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.dji.Drogon/com.dji.Drogon.ConnectionActivity'
-//    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.dji.Drogon/com.dji.Drogon.MainActivity'
+//    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.dji.Drogon/com.dji.Drogon.ConnectionActivity'
+    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.dji.Drogon/com.dji.Drogon.MainActivity'
 }

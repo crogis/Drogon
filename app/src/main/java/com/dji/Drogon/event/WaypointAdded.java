@@ -1,3 +1,3 @@
 package com.dji.Drogon.event;
 
-public class TakeOffClicked {}
+public class WaypointAdded {}

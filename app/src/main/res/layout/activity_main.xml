@@ -24,10 +24,16 @@
         <LinearLayout style="@style/LeftRightLayout"
             android:gravity="center|center_vertical">
             <ImageButton style="@style/TakeOffHomeButton"
+                android:id="@+id/clear_waypoints_image_button"
+                android:background="@drawable/circle_bg"
+                android:src="@drawable/clear_markers"
+                android:visibility="gone"
+                android:layout_marginBottom="15dp"/>
+            <ImageButton style="@style/TakeOffHomeButton"
                 android:id="@+id/take_off_image_button"
                 android:background="@drawable/circle_bg"
                 android:src="@drawable/take_off"
-                android:layout_marginBottom="20dp"/>
+                android:layout_marginBottom="15dp"/>
             <ImageButton style="@style/TakeOffHomeButton"
                 android:id="@+id/go_home_image_button"
                 android:background="@drawable/circle_bg"

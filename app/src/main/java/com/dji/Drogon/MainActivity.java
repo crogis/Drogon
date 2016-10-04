@@ -19,11 +19,14 @@ import android.widget.TextView;
 
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
+import com.dji.Drogon.event.ClearWaypointsClicked;
 import com.dji.Drogon.event.FragmentChange;
 import com.dji.Drogon.event.TakeOffClicked;
+import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
+import com.squareup.otto.Subscribe;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -39,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
 
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
+  @BindView(R.id.take_off_image_button) ImageButton takeOffImageBtn;
   @BindView(R.id.go_home_image_button) ImageButton goHomeImageBtn;
+  @BindView(R.id.clear_waypoints_image_button) ImageButton clearWaypointsImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
 
@@ -47,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.notification_text_view) TextView notificationTextView;
 
   Boolean isMapFragmentMain = true;
+
+  WaypointMarkers markers = WaypointMarkers.getInstance();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
 
     initializeToolbar();
 
+    takeOffImageBtn.setEnabled(false);
     goHomeImageBtn.setEnabled(false);
 
     Fragment cameraFragment = new CameraFragment();
@@ -83,8 +91,13 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
-    showToast("Hello World!");
-    //    DrogonApplication.getBus().post(new TakeOffClicked());
+    DrogonApplication.getBus().post(new TakeOffClicked());
+    clearWaypointsImageBtn.setEnabled(false);
+  }
+
+  @OnClick(R.id.clear_waypoints_image_button) void onClearWaypointsClicked() {
+    DrogonApplication.getBus().post(new ClearWaypointsClicked());
+    configureLeftSideButtons();
   }
 
   @OnClick(R.id.border_layout) void onFragmentChange() {
@@ -128,7 +141,23 @@ public class MainActivity extends AppCompatActivity {
     FrameLayout temp = subLayout;
     subLayout = mainLayout;
     mainLayout = temp;
+  }
 
+  @Subscribe
+  public void onWaypointAdded(WaypointAdded m) {
+    System.out.println("SIZE === " + markers.size());
+
+    if(markers.size() <= 1) {
+      showToast("Add more waypoints before take-off!");
+    }
+    configureLeftSideButtons();
+  }
+
+  private void configureLeftSideButtons() {
+    int visibility = markers.size() >= 2 ? View.VISIBLE : View.GONE;
+    clearWaypointsImageBtn.setVisibility(visibility);
+
+    takeOffImageBtn.setEnabled(markers.size() >= 2);
   }
 
   private void createSettingsDialog() {
@@ -155,16 +184,28 @@ public class MainActivity extends AppCompatActivity {
 
   public void showToast(String message) {
     if(notificationLayout.getVisibility() == View.GONE) {
-      ExpandCollapseAnimation enterAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 0);
-      notificationLayout.startAnimation(enterAnimation);
-      notificationTextView.setText(message);
+      showNotification(message);
       new Handler().postDelayed(new Runnable() {
         @Override
         public void run() {
-          ExpandCollapseAnimation exitAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 1);
-          notificationLayout.startAnimation(exitAnimation);
+          hideNotification();
         }
       }, 3500);
+    }
+  }
+
+  public void showNotification(String message) {
+    if(notificationLayout.getVisibility() == View.GONE) {
+      ExpandCollapseAnimation enterAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 0);
+      notificationLayout.startAnimation(enterAnimation);
+      notificationTextView.setText(message);
+    }
+  }
+
+  public void hideNotification() {
+    if(notificationLayout.getVisibility() == View.VISIBLE) {
+      ExpandCollapseAnimation exitAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 1);
+      notificationLayout.startAnimation(exitAnimation);
     }
   }
 
@@ -186,5 +227,17 @@ public class MainActivity extends AppCompatActivity {
 
   public <T> boolean isNull(T i) {
     return i == null;
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    DrogonApplication.getBus().register(this);
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    DrogonApplication.getBus().unregister(this);
   }
 }

@@ -15,7 +15,11 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.dji.Drogon.DrogonApplication;
+import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
+import com.dji.Drogon.WaypointMarkers;
+import com.dji.Drogon.event.ClearWaypointsClicked;
+import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.event.TakeOffClicked;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -29,13 +33,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.squareup.otto.Subscribe;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -66,7 +69,9 @@ public class MapFragment extends Fragment {
   private GoogleMap googleMap;
 
   private boolean isAdd = false;
-  private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
+
+  WaypointMarkers markers = WaypointMarkers.getInstance();
+//  private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
 
   private float missionAltitude = 10.0f;
   private float missionSpeed = 1.0f; // 1m/s
@@ -74,6 +79,10 @@ public class MapFragment extends Fragment {
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
   private DJIMissionManager missionManager;
+
+  double meters = 0.013;
+
+  LatLng homeLatLng = null;
 
   protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
     @Override
@@ -119,7 +128,9 @@ public class MapFragment extends Fragment {
 
 //        LatLng dronePosition = new LatLng(droneLocationLat, droneLocationLng);
 //        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dronePosition, 18.0f));
-        cameraUpdate();
+
+        //todo remove this
+//        cameraUpdate();
         updateDroneLocation();
       }
     });
@@ -129,12 +140,17 @@ public class MapFragment extends Fragment {
   private OnMapClickListener mapClickListener = new OnMapClickListener() {
     @Override
     public void onMapClick(LatLng point) {
-      markWaypoint(point);
-      DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
-
-      if (isNotNull(waypointMission)) {
-        waypointMission.addWaypoint(waypoint);
-        showToast("AddWaypoint");
+      if(DrogonApplication.isAircraftConnected() && checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
+//        markWaypoint(point);
+        if (isNotNull(waypointMission)) {
+          //todo uncomment this
+          markWaypoint(point);
+//          DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
+//          waypointMission.addWaypoint(waypoint);
+          showToast("AddWaypoint");
+        }
+      } else {
+        showToast("Unable to add waypoints");
       }
     }
   };
@@ -154,22 +170,20 @@ public class MapFragment extends Fragment {
     markerOptions.icon(BitmapDescriptorFactory.fromResource(pointResource));
     markerOptions.anchor((float)0.5, (float)0.5);
     Marker marker = googleMap.addMarker(markerOptions);
-    waypointMarkers.put(waypointMarkers.size(), marker);
+    markers.add(marker);
+    //todo move this
+    markers.addLine(addPolyline());
 
-    addLines();
+    DrogonApplication.getBus().post(new WaypointAdded());
   }
 
-  private void addLines() {
-
+  private Polyline addPolyline() {
     PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
-    for (int z = 0; z < waypointMarkers.size(); z++) {
-      LatLng point = waypointMarkers.get(z).getPosition();
+    for (int z = 0; z < markers.size(); z++) {
+      LatLng point = markers.getPosition(z);
       options.add(point);
     }
-    googleMap.addPolyline(options);
-//    PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
-//    options.add(point);
-//    googleMap.addPolyline(options);
+    return googleMap.addPolyline(options);
   }
 
   private MissionProgressStatusCallback missionProgressStatusCallback = new MissionProgressStatusCallback() {
@@ -181,9 +195,8 @@ public class MapFragment extends Fragment {
 
   //initializes flight controller and mission manager
   private void initializeDJI() {
-//    showToast("Init flight Controller");
     DJIBaseProduct product = DrogonApplication.getProductInstance();
-    if(isNotNull(product) && product.isConnected() && product instanceof DJIAircraft) {
+    if(DrogonApplication.isAircraftConnected()) {
       //flight
       flightController = ((DJIAircraft) product).getFlightController();
 
@@ -191,18 +204,32 @@ public class MapFragment extends Fragment {
       missionManager = product.getMissionManager();
       missionManager.setMissionProgressStatusCallback(missionProgressStatusCallback);
       missionManager.setMissionExecutionFinishedCallback(setMissionExecutionCallback);
+      updateDroneLocation();
     } else {
 //      showToast("Product not connected :(");
       missionManager = null;
     }
 
+    showToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
+
     if(isNotNull(flightController)) {
+      showToast("setting state callback");
       flightController.setUpdateSystemStateCallback(new FlightControllerUpdateSystemStateCallback(){
         @Override
         public void onResult(DJIFlightControllerCurrentState state) {
           DJILocationCoordinate3D aircraftLocation = state.getAircraftLocation();
           droneLocationLat = aircraftLocation.getLatitude();
           droneLocationLng = aircraftLocation.getLongitude();
+          getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+              if(checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)) {
+                homeLatLng = new LatLng(droneLocationLat, droneLocationLng);
+                markHome(homeLatLng);
+                cameraUpdate();
+              }
+            }
+          });
           updateDroneLocation();
         }
       });
@@ -218,10 +245,11 @@ public class MapFragment extends Fragment {
       final MarkerOptions markerOptions = new MarkerOptions();
       markerOptions.position(pos);
       markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.drone_for_map));
+      markerOptions.anchor((float)0.5, (float)0.5);
       getActivity().runOnUiThread(new Runnable() {
         @Override
         public void run() {
-          if (droneMarker != null) {
+          if (isNotNull(droneMarker)) {
             droneMarker.remove();
           }
           if (checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
@@ -229,19 +257,51 @@ public class MapFragment extends Fragment {
           }
         }
       });
+      hideNotification();
+    } else {
+      //todo uncomment
+      showNotification("Drone Location Not Found");
     }
+  }
+
+  private void showNotification(final String message) {
+    getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if(getActivity() instanceof MainActivity) {
+          MainActivity mainActivity = (MainActivity) getActivity();
+          mainActivity.showNotification(message);
+        }
+      }
+    });
+  }
+
+  private void hideNotification() {
+    getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if(getActivity() instanceof MainActivity) {
+          MainActivity mainActivity = (MainActivity) getActivity();
+          mainActivity.hideNotification();
+        }
+      }
+    });
   }
 
   @Subscribe
   public void onTakeOffClicked(TakeOffClicked clicked) {
+    for(int i = 0; i < markers.size(); i++) {
+      LatLng point = markers.getPosition(i);
+      DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
+      waypointMission.addWaypoint(waypoint);
+    }
     configWayPointMission();
     prepareWayPointMission();
-    PolylineOptions options = new PolylineOptions().width(10).color(Color.BLACK).geodesic(true);
-    for (int z = 0; z < waypointMarkers.size(); z++) {
-      LatLng point = waypointMarkers.get(z).getPosition();
-      options.add(point);
-    }
-    googleMap.addPolyline(options);
+  }
+
+  @Subscribe
+  public void onClearWaypointsClicked(ClearWaypointsClicked clicked) {
+    markers.clear();
   }
 
   private void configWayPointMission(){
@@ -292,35 +352,66 @@ public class MapFragment extends Fragment {
     if(checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
       LatLng dronePosition = new LatLng(droneLocationLat, droneLocationLng);
       camUpdate = CameraUpdateFactory.newLatLngZoom(dronePosition, zoomLevel);
-    } else {
-      //todo find a way to not add a position
-      LatLng defaultPosition = new LatLng(14.609592, 121.079647);
-      camUpdate = CameraUpdateFactory.newLatLngZoom(defaultPosition, zoomLevel);
-      markHome(defaultPosition);
+      googleMap.moveCamera(camUpdate);
     }
-    googleMap.moveCamera(camUpdate);
+//    else {
+//      //todo find a way to not add a position
+//      LatLng defaultPosition = new LatLng(14.609592, 121.079647);
+//      camUpdate = CameraUpdateFactory.newLatLngZoom(defaultPosition, zoomLevel);
+//      markHome(defaultPosition);
+//    }
+//    googleMap.moveCamera(camUpdate);
 
-    double meters = 0.013;
+    /*
 
     LatLng center = new LatLng(14.609592, 121.079647);
 
-    LatLng bearingLatLng = new LatLng(14.609709, 121.079457);
+//    LatLng bearingLatLng = new LatLng(14.609709, 121.079457);
+    LatLng bearingLatLng = new LatLng(14.610730, 121.077298);
 
-    double bearing = angleFromCoordinate2(center, bearingLatLng);
-
-    GetDestinationPoint(center, (float) bearing, (float)meters);
-//    googleMap.addPolygon(
-//      new PolygonOptions()
-//        .addAll(createRectangle(new LatLng(14.609592, 121.079647), 5, 5))
-//        .fillColor(Color.CYAN)
-//        .strokeColor(Color.BLUE)
-//        .strokeWidth(5)
-//    );
-
-    //meters?
-//    doSomething(center, 1, 1);
+    markWaypoint(bearingLatLng);
+    addSquare(bearingLatLng, meters);
 
 
+    //returns meters
+    Double distance = SphericalUtil.computeDistanceBetween(center, bearingLatLng);
+    Double heading = SphericalUtil.computeHeading(center, bearingLatLng);
+    System.out.println("DISTANCE " + distance);
+    System.out.println("HEADING " + heading);
+
+    Location init = new Location("init");
+    init.setLatitude(14.609592);
+    init.setLongitude(121.079647);
+
+    Location finalz = new Location("finals");
+    finalz.setLatitude(14.610730);
+    finalz.setLongitude(121.077298);
+    System.out.println("HEADINGZ " + init.bearingTo(finalz));
+    System.out.println("HEADINGZ1 " + bearingInRadians(center, bearingLatLng));
+    System.out.println("HEADINGZ2 " + bearingInDegrees(center, bearingLatLng));
+
+
+//    double bearing = angleFromCoordinate2(center, bearingLatLng);
+//    LatLng dest = GetDestinationPoint(center, (float) bearing, (float)meters);
+   */
+
+  }
+
+  public static double bearingInRadians(LatLng src, LatLng dst) {
+    double srcLat = Math.toRadians(src.latitude);
+    double dstLat = Math.toRadians(dst.latitude);
+    double dLng = Math.toRadians(dst.longitude - src.longitude);
+
+    return Math.atan2(Math.sin(dLng) * Math.cos(dstLat),
+            Math.cos(srcLat) * Math.sin(dstLat) -
+                    Math.sin(srcLat) * Math.cos(dstLat) * Math.cos(dLng));
+  }
+
+  public static double bearingInDegrees(LatLng src, LatLng dst) {
+    return Math.toDegrees((bearingInRadians(src, dst) + Math.PI) % Math.PI);
+  }
+
+  private void addSquare(LatLng center, double meters) {
     LatLng one = doSomething(center, meters, 0); // |
     LatLng two = doSomething(center, -meters, 0); // |
 
@@ -421,9 +512,10 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback prepareMissionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
-      if(isNotNull(error)) {
+      if(isNull(error)) {
         startWaypointMission();
       } else {
+        showToast("error!!!! :( " + error.getDescription());
         //show toast that's there's an error
       }
       showToast("Prepare mission: " + (error == null ? "Success" : error.getDescription()));
@@ -433,6 +525,7 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback startMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
+      //post
       showToast("Start mission: " + (error == null ? "Success" : error.getDescription()));
     }
   };
@@ -440,6 +533,7 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback stopMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
+      //post
       showToast("Stop mission: " + (error == null ? "Success" : error.getDescription()));
     }
   };

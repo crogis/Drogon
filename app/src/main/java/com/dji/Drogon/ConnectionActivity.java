@@ -38,8 +38,8 @@ public class ConnectionActivity extends Activity {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
       ActivityCompat.requestPermissions(this,getPermissions(), 1);
 
-//    openButton.setEnabled(true);
-    openButton.setEnabled(false);
+    openButton.setEnabled(true);
+//    openButton.setEnabled(false);
 
     IntentFilter filter = new IntentFilter();
     filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE);
@@ -57,7 +57,6 @@ public class ConnectionActivity extends Activity {
     DJIBaseProduct mProduct = DrogonApplication.getProductInstance();
     String textProduct = "", textConnectionStatus = "";
 
-    System.out.println("IS PRODUCT NULL " + isNotNull(mProduct));
     boolean isProductConnected = isNotNull(mProduct) && mProduct.isConnected();
     if(isProductConnected) {
       String str = mProduct instanceof DJIAircraft ? "DJIAircraft" : "DJIHandheld";
@@ -69,7 +68,7 @@ public class ConnectionActivity extends Activity {
     }
     Log.v(TAG, "refreshSDK: " + isProductConnected);
 
-    openButton.setEnabled(isProductConnected);
+//    openButton.setEnabled(isProductConnected);
 
     productInfoTextView.setText(textProduct);
     connectionStatusTextView.setText(textConnectionStatus);
