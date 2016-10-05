@@ -19,14 +19,22 @@ import android.widget.TextView;
 
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
+import com.dji.Drogon.db.DrogonDatabase;
+import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.MissionDetails;
+import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
 import com.dji.Drogon.event.FragmentChange;
+import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.TakeOffClicked;
 import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
 import com.squareup.otto.Subscribe;
+
+import java.util.Date;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -42,9 +50,9 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
 
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
-  @BindView(R.id.take_off_image_button) ImageButton takeOffImageBtn;
-  @BindView(R.id.go_home_image_button) ImageButton goHomeImageBtn;
-  @BindView(R.id.clear_waypoints_image_button) ImageButton clearWaypointsImageBtn;
+  @BindView(R.id.take_off_image_button) public ImageButton takeOffImageBtn;
+  @BindView(R.id.go_home_image_button) public ImageButton goHomeImageBtn;
+  @BindView(R.id.clear_waypoints_image_button) public ImageButton clearWaypointsImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
 
@@ -54,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
   Boolean isMapFragmentMain = true;
 
   WaypointMarkers markers = WaypointMarkers.getInstance();
+  MissionDetails missionDetails = MissionDetails.getInstance();
+
+  public DrogonDatabase database = new DrogonDatabase(this);
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +85,13 @@ public class MainActivity extends AppCompatActivity {
     Fragment mapFragment = new MapFragment();
     addFragmentToMain(mapFragment);
     addFragmentToSub(cameraFragment);
+
+//    List<DBMission> missions = database.getMissions();
+//    System.out.println("READING DATABASE " + missions.size());
+//    for(int i = 0; i < missions.size(); i++) {
+//      System.out.println(missions.get(i).getMissionId());
+//    }
+
   }
 
   private void initializeToolbar() {
@@ -91,8 +109,14 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
-    DrogonApplication.getBus().post(new TakeOffClicked());
-    clearWaypointsImageBtn.setEnabled(false);
+    if(missionDetails.isMissionInProgress()) {
+      DrogonApplication.getBus().post(new StopMissionClicked());
+      goHomeImageBtn.setEnabled(true);
+    }
+    else {
+      DrogonApplication.getBus().post(new TakeOffClicked());
+      clearWaypointsImageBtn.setEnabled(false);
+    }
   }
 
   @OnClick(R.id.clear_waypoints_image_button) void onClearWaypointsClicked() {

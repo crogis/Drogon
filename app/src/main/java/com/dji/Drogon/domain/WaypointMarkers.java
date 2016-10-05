@@ -1,4 +1,4 @@
-package com.dji.Drogon;
+package com.dji.Drogon.domain;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WaypointMarkers {
 
-  private static WaypointMarkers waypointDetailsInstance = new WaypointMarkers();;
+  private static WaypointMarkers waypointDetailsInstance = new WaypointMarkers();
 
   private static final Map<Integer, Marker> markers = new ConcurrentHashMap<Integer, Marker>();
 

@@ -17,8 +17,12 @@ import android.widget.Toast;
 import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
-import com.dji.Drogon.WaypointMarkers;
+import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.MissionDetails;
+import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
+import com.dji.Drogon.event.GoHomeClicked;
+import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.event.TakeOffClicked;
 import com.google.android.gms.maps.CameraUpdate;
@@ -71,6 +75,7 @@ public class MapFragment extends Fragment {
   private boolean isAdd = false;
 
   WaypointMarkers markers = WaypointMarkers.getInstance();
+  MissionDetails missionDetails = MissionDetails.getInstance();
 //  private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
 
   private float missionAltitude = 10.0f;
@@ -123,12 +128,7 @@ public class MapFragment extends Fragment {
       @Override
       public void onMapReady(GoogleMap mMap) {
         googleMap = mMap;
-
         googleMap.setOnMapClickListener(mapClickListener);
-
-//        LatLng dronePosition = new LatLng(droneLocationLat, droneLocationLng);
-//        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dronePosition, 18.0f));
-
         //todo remove this
 //        cameraUpdate();
         updateDroneLocation();
@@ -141,16 +141,12 @@ public class MapFragment extends Fragment {
     @Override
     public void onMapClick(LatLng point) {
       if(DrogonApplication.isAircraftConnected() && checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
-//        markWaypoint(point);
         if (isNotNull(waypointMission)) {
-          //todo uncomment this
           markWaypoint(point);
-//          DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
-//          waypointMission.addWaypoint(waypoint);
-          showToast("AddWaypoint");
+          showNativeToast("AddWaypoint");
         }
       } else {
-        showToast("Unable to add waypoints");
+        showNativeToast("Unable to add waypoints");
       }
     }
   };
@@ -188,9 +184,7 @@ public class MapFragment extends Fragment {
 
   private MissionProgressStatusCallback missionProgressStatusCallback = new MissionProgressStatusCallback() {
     @Override
-    public void missionProgressStatus(DJIMissionProgressStatus status) {
-
-    }
+    public void missionProgressStatus(DJIMissionProgressStatus status) {}
   };
 
   //initializes flight controller and mission manager
@@ -206,36 +200,40 @@ public class MapFragment extends Fragment {
       missionManager.setMissionExecutionFinishedCallback(setMissionExecutionCallback);
       updateDroneLocation();
     } else {
-//      showToast("Product not connected :(");
+//      showNativeToast("Product not connected :(");
       missionManager = null;
     }
 
-    showToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
+    showNativeToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
 
     if(isNotNull(flightController)) {
-      showToast("setting state callback");
+      showNativeToast("setting state callback");
       flightController.setUpdateSystemStateCallback(new FlightControllerUpdateSystemStateCallback(){
         @Override
         public void onResult(DJIFlightControllerCurrentState state) {
           DJILocationCoordinate3D aircraftLocation = state.getAircraftLocation();
           droneLocationLat = aircraftLocation.getLatitude();
           droneLocationLng = aircraftLocation.getLongitude();
-          getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-              if(checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)) {
-                homeLatLng = new LatLng(droneLocationLat, droneLocationLng);
-                markHome(homeLatLng);
-                cameraUpdate();
-              }
-            }
-          });
+          setHomeCoordinate();
           updateDroneLocation();
         }
       });
     }
 
     waypointMission = new DJIWaypointMission();
+  }
+
+  private void setHomeCoordinate() {
+    getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if(checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)) {
+          homeLatLng = new LatLng(droneLocationLat, droneLocationLng);
+          markHome(homeLatLng);
+          cameraUpdate();
+        }
+      }
+    });
   }
 
   private void updateDroneLocation(){
@@ -259,19 +257,24 @@ public class MapFragment extends Fragment {
       });
       hideNotification();
     } else {
-      //todo uncomment
       showNotification("Drone Location Not Found");
     }
+  }
+
+  private void showToast(final String message) {
+    getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        mainActivity().showToast(message);
+      }
+    });
   }
 
   private void showNotification(final String message) {
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        if(getActivity() instanceof MainActivity) {
-          MainActivity mainActivity = (MainActivity) getActivity();
-          mainActivity.showNotification(message);
-        }
+        mainActivity().showNotification(message);
       }
     });
   }
@@ -280,10 +283,7 @@ public class MapFragment extends Fragment {
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        if(getActivity() instanceof MainActivity) {
-          MainActivity mainActivity = (MainActivity) getActivity();
-          mainActivity.hideNotification();
-        }
+          mainActivity().hideNotification();
       }
     });
   }
@@ -300,8 +300,19 @@ public class MapFragment extends Fragment {
   }
 
   @Subscribe
+  public void onStopMissionClicked(StopMissionClicked clicked) {
+    stopWaypointMission();
+  }
+
+  @Subscribe
+  public void onGoHomeClicked(GoHomeClicked clicked) {
+    stopWaypointMission();
+  }
+
+  @Subscribe
   public void onClearWaypointsClicked(ClearWaypointsClicked clicked) {
     markers.clear();
+    waypointMission.removeAllWaypoints();
   }
 
   private void configWayPointMission(){
@@ -310,13 +321,10 @@ public class MapFragment extends Fragment {
       waypointMission.headingMode = missionHeadingMode;
       waypointMission.autoFlightSpeed = missionSpeed;
 
-      //todo remove this if statement and the toast
-      if(waypointMission.waypointsList.size() > 0) {
-        for (int i = 0; i< waypointMission.waypointsList.size(); i++){
-          waypointMission.getWaypointAtIndex(i).altitude = missionAltitude;
-        }
-        showToast("Successfully set waypoints");
+      for (int i = 0; i< waypointMission.waypointsList.size(); i++){
+        waypointMission.getWaypointAtIndex(i).altitude = missionAltitude;
       }
+      showNativeToast("Successfully set waypoints");
     }
   }
 
@@ -505,7 +513,7 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback setMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
-      showToast("Execution finished: " + (error == null ? "Success" : error.getDescription()));
+      showNativeToast("Execution finished: " + (error == null ? "Success" : error.getDescription()));
     }
   };
 
@@ -515,28 +523,49 @@ public class MapFragment extends Fragment {
       if(isNull(error)) {
         startWaypointMission();
       } else {
-        showToast("error!!!! :( " + error.getDescription());
+        showNativeToast("error!!!! :( " + error.getDescription());
         //show toast that's there's an error
       }
-      showToast("Prepare mission: " + (error == null ? "Success" : error.getDescription()));
+      showNativeToast("Prepare mission: " + (error == null ? "Success" : error.getDescription()));
     }
   };
 
   private DJICompletionCallback startMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
-      //post
-      showToast("Start mission: " + (error == null ? "Success" : error.getDescription()));
+      int imgResource = isNull(error) ? R.drawable.cancel_mission : R.drawable.take_off;
+      mainActivity().takeOffImageBtn.setImageResource(imgResource);
+
+      if(isNull(error)) {
+        missionDetails.setMissionStart();
+      }
+
+      String status = isNull(error) ? "Success" : error.getDescription();
+      showToast("Mission Started: " + status);
+//      showNativeToast("Start mission: " + (error == null ? "Success" : error.getDescription()));
     }
   };
 
   private DJICompletionCallback stopMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
-      //post
-      showToast("Stop mission: " + (error == null ? "Success" : error.getDescription()));
+      int imgResource = isNull(error) ? R.drawable.take_off : R.drawable.cancel_mission;
+      mainActivity().takeOffImageBtn.setImageResource(imgResource);
+
+      if(isNull(error)) {
+        missionDetails.setMissionStop();
+        mainActivity().clearWaypointsImageBtn.setEnabled(true);
+        mainActivity().goHomeImageBtn.setEnabled(false);
+      }
+      String status = isNull(error) ? "Success" : error.getDescription();
+      showToast("Mission Stopped: " + status);
+//      showNativeToast("Stop mission: " + (error == null ? "Success" : error.getDescription()));
     }
   };
+
+  private void addMissionToDB(DBMission mission) {
+    mainActivity().database.insertMission(mission);
+  }
 
   @Override
   public void onResume() {
@@ -570,7 +599,7 @@ public class MapFragment extends Fragment {
     return (latitude > -90 && latitude < 90 && longitude > -180 && longitude < 180) && (latitude != 0f && longitude != 0f);
   }
 
-  public void showToast(String msg) {
+  public void showNativeToast(String msg) {
     Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
   }
 
@@ -580,5 +609,9 @@ public class MapFragment extends Fragment {
 
   public <T> boolean isNull(T i) {
     return i == null;
+  }
+
+  private MainActivity mainActivity() {
+    return (MainActivity)getActivity();
   }
 }
