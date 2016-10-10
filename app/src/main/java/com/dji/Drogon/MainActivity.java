@@ -1,6 +1,7 @@
 package com.dji.Drogon;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
@@ -16,6 +17,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
@@ -33,12 +35,24 @@ import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
 import com.squareup.otto.Subscribe;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.net.MalformedURLException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Date;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SmbException;
+import jcifs.smb.SmbFile;
+import jcifs.smb.SmbFileOutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.toolbar) Toolbar toolbar;
 
-  @BindView(R.id.dropdown_notification_layout) LinearLayout notificationLayout;
+  //todo revert to private after testing
+  @BindView(R.id.dropdown_notification_layout) public LinearLayout notificationLayout;
   @BindView(R.id.notification_text_view) TextView notificationTextView;
 
   Boolean isMapFragmentMain = true;
@@ -92,6 +107,61 @@ public class MainActivity extends AppCompatActivity {
 //      System.out.println(missions.get(i).getMissionId());
 //    }
 
+    Thread thread = new Thread(new Runnable() {
+
+      @Override
+      public void run() {
+        try  {
+          //Your code goes here
+          SmbFile[] domains = null;
+          try {
+            try {
+//              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", username, password);
+              SmbFile file = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/");
+              System.out.println("SD CARD PATH " + Environment.getExternalStorageDirectory().getPath());
+//              File imageFile =new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera/", "20160924_151141.jpg");
+              File imageFile =new File("/sdcard/DCIM/Camera/", "20160924_151141.jpg");
+              System.out.println("does this exist " + imageFile.exists());
+              FileInputStream fis= new FileInputStream(imageFile);
+//              String newDir = file.getPath() + "temp/";
+//
+//              SmbFile newFileDir = new SmbFile(newDir);
+//              newFileDir.mkdir();
+
+//              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, null, null);
+              SmbFile f = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/20160924_151141.jpg");//, auth);
+              f.createNewFile();
+              System.out.println("CREATINGGGG " + f.exists());
+              SmbFileOutputStream os = new SmbFileOutputStream(f, false);
+//              String test = "test blahblahblah";
+//              os.write(test.getBytes());
+//              FileChannel inChannel = new RandomAccessFile(imageFile, "r").getChannel();
+//              MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+//              os.write(buffer.asReadOnlyBuffer().array());
+              byte buffer[] = new byte[1024];
+              int read;
+              while((read = fis.read(buffer)) != -1){
+                System.out.println("WRITING......");
+                os.write(buffer, 0, read);
+              }
+              fis.close();
+              os.close();
+//              domains = file.listFiles();
+//              for (int i = 0; i < domains.length; i++) {
+//                System.out.println("HEREEEE " + domains[i].getName());
+//              }
+            } catch (MalformedURLException e){
+              e.printStackTrace();
+            }
+          } catch (SmbException e1) {
+            e1.printStackTrace();
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    thread.start();
   }
 
   private void initializeToolbar() {
@@ -169,9 +239,7 @@ public class MainActivity extends AppCompatActivity {
 
   @Subscribe
   public void onWaypointAdded(WaypointAdded m) {
-    System.out.println("SIZE === " + markers.size());
-
-    if(markers.size() <= 1) {
+    if(markers.size() <= 2) {
       showToast("Add more waypoints before take-off!");
     }
     configureLeftSideButtons();
@@ -181,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
     int visibility = markers.size() >= 2 ? View.VISIBLE : View.GONE;
     clearWaypointsImageBtn.setVisibility(visibility);
 
-    takeOffImageBtn.setEnabled(markers.size() >= 2);
+    takeOffImageBtn.setEnabled(markers.size() > 2);
   }
 
   private void createSettingsDialog() {
@@ -207,15 +275,13 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public void showToast(String message) {
-    if(notificationLayout.getVisibility() == View.GONE) {
-      showNotification(message);
-      new Handler().postDelayed(new Runnable() {
-        @Override
-        public void run() {
-          hideNotification();
-        }
-      }, 3500);
-    }
+    showNotification(message);
+    new Handler().postDelayed(new Runnable() {
+      @Override
+      public void run() {
+        hideNotification();
+      }
+    }, 3500);
   }
 
   public void showNotification(String message) {

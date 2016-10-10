@@ -79,7 +79,7 @@ public class MapFragment extends Fragment {
 //  private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
 
   private float missionAltitude = 10.0f;
-  private float missionSpeed = 1.0f; // 1m/s
+  private float missionSpeed = 50.0f;//1.0f; // 1m/s
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
@@ -132,6 +132,7 @@ public class MapFragment extends Fragment {
         //todo remove this
 //        cameraUpdate();
         updateDroneLocation();
+        setHomeCoordinate();
       }
     });
     return view;
@@ -216,6 +217,7 @@ public class MapFragment extends Fragment {
           droneLocationLng = aircraftLocation.getLongitude();
           setHomeCoordinate();
           updateDroneLocation();
+          enableLeftSideButtons();
         }
       });
     }
@@ -231,6 +233,9 @@ public class MapFragment extends Fragment {
           homeLatLng = new LatLng(droneLocationLat, droneLocationLng);
           markHome(homeLatLng);
           cameraUpdate();
+          hideNotification();
+        } else if (!checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)){
+          showNotification("Drone Location Not Found");
         }
       }
     });
@@ -250,21 +255,36 @@ public class MapFragment extends Fragment {
           if (isNotNull(droneMarker)) {
             droneMarker.remove();
           }
-          if (checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
-            droneMarker = googleMap.addMarker(markerOptions);
-          }
+          droneMarker = googleMap.addMarker(markerOptions);
         }
       });
-      hideNotification();
-    } else {
-      showNotification("Drone Location Not Found");
     }
+  }
+
+  private void enableLeftSideButtons() {
+    getActivity().runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if (checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
+          LatLng pos = new LatLng(droneLocationLat, droneLocationLng);
+          if(!missionDetails.isMissionInProgress() && pos == homeLatLng) {
+            mainActivity().takeOffImageBtn.setEnabled(true);
+            mainActivity().clearWaypointsImageBtn.setEnabled(true);
+          } else if(!missionDetails.isMissionInProgress()) {
+            mainActivity().takeOffImageBtn.setEnabled(false);
+            mainActivity().takeOffImageBtn.setImageResource(R.drawable.take_off);
+          }
+        }
+      }
+    });
+
   }
 
   private void showToast(final String message) {
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {
+        showNativeToast("v=" + mainActivity().notificationLayout.getVisibility() + " m=" + message);
         mainActivity().showToast(message);
       }
     });
@@ -290,6 +310,7 @@ public class MapFragment extends Fragment {
 
   @Subscribe
   public void onTakeOffClicked(TakeOffClicked clicked) {
+    waypointMission.removeAllWaypoints();
     for(int i = 0; i < markers.size(); i++) {
       LatLng point = markers.getPosition(i);
       DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
@@ -513,6 +534,9 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback setMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
+      if(isNotNull(error)) {
+        missionDetails.setMissionStop();
+      }
       showNativeToast("Execution finished: " + (error == null ? "Success" : error.getDescription()));
     }
   };
@@ -533,8 +557,13 @@ public class MapFragment extends Fragment {
   private DJICompletionCallback startMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
-      int imgResource = isNull(error) ? R.drawable.cancel_mission : R.drawable.take_off;
-      mainActivity().takeOffImageBtn.setImageResource(imgResource);
+      final int imgResource = isNull(error) ? R.drawable.cancel_mission : R.drawable.take_off;
+      getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          mainActivity().takeOffImageBtn.setImageResource(imgResource);
+        }
+      });
 
       if(isNull(error)) {
         missionDetails.setMissionStart();
@@ -548,18 +577,21 @@ public class MapFragment extends Fragment {
 
   private DJICompletionCallback stopMissionExecutionCallback = new DJICompletionCallback() {
     @Override
-    public void onResult(DJIError error) {
-      int imgResource = isNull(error) ? R.drawable.take_off : R.drawable.cancel_mission;
-      mainActivity().takeOffImageBtn.setImageResource(imgResource);
-
-      if(isNull(error)) {
-        missionDetails.setMissionStop();
-        mainActivity().clearWaypointsImageBtn.setEnabled(true);
-        mainActivity().goHomeImageBtn.setEnabled(false);
-      }
-      String status = isNull(error) ? "Success" : error.getDescription();
-      showToast("Mission Stopped: " + status);
-//      showNativeToast("Stop mission: " + (error == null ? "Success" : error.getDescription()));
+    public void onResult(final DJIError error) {
+      final int imgResource = isNull(error) ? R.drawable.take_off : R.drawable.cancel_mission;
+      final String status = isNull(error) ? "Success" : error.getDescription();
+      getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          mainActivity().takeOffImageBtn.setImageResource(imgResource);
+          if(isNull(error)) {
+            missionDetails.setMissionStop();
+            mainActivity().clearWaypointsImageBtn.setEnabled(true);
+            mainActivity().goHomeImageBtn.setEnabled(false);
+          }
+          showToast("Mission Stopped: " + status);
+        }
+      });
     }
   };
 
