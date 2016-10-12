@@ -326,11 +326,6 @@ public class MapFragment extends Fragment {
   }
 
   @Subscribe
-  public void onGoHomeClicked(GoHomeClicked clicked) {
-    stopWaypointMission();
-  }
-
-  @Subscribe
   public void onClearWaypointsClicked(ClearWaypointsClicked clicked) {
     markers.clear();
     waypointMission.removeAllWaypoints();
@@ -587,7 +582,6 @@ public class MapFragment extends Fragment {
           if(isNull(error)) {
             missionDetails.setMissionStop();
             mainActivity().clearWaypointsImageBtn.setEnabled(true);
-            mainActivity().goHomeImageBtn.setEnabled(false);
           }
           showToast("Mission Stopped: " + status);
         }

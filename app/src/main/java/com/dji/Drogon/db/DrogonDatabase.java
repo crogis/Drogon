@@ -5,17 +5,16 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.renderscript.Sampler;
 
 import com.dji.Drogon.db.domain.Mission.*;
 import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.helper.DateFormatter;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class DrogonDatabase extends SQLiteOpenHelper {
 
@@ -33,7 +32,7 @@ public class DrogonDatabase extends SQLiteOpenHelper {
       createColumn(MissionEntry.COLUMN_NAME_HOME_LAT, "decimal(64,16) NOT NULL", DELIMITER) +
       createColumn(MissionEntry.COLUMN_NAME_HOME_LNG, "decimal(64,16) NOT NULL", "") + " )";
 
-  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+  SimpleDateFormat dateFormat = DateFormatter.getReadableDateFormat();
 
   public DrogonDatabase(Context context) {
     super(context, DATABASE_NAME, null, DATABASE_VERSION);

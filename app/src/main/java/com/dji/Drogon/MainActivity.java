@@ -1,7 +1,6 @@
 package com.dji.Drogon;
 
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
@@ -17,12 +16,12 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.db.DrogonDatabase;
 import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.FileDirectory;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
@@ -30,29 +29,19 @@ import com.dji.Drogon.event.FragmentChange;
 import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.TakeOffClicked;
 import com.dji.Drogon.event.WaypointAdded;
+import com.dji.Drogon.helper.CSVWriter;
+import com.dji.Drogon.helper.FileHelper;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.net.MalformedURLException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Date;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import jcifs.smb.NtlmPasswordAuthentication;
-import jcifs.smb.SmbException;
-import jcifs.smb.SmbFile;
-import jcifs.smb.SmbFileOutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
   @BindView(R.id.take_off_image_button) public ImageButton takeOffImageBtn;
-  @BindView(R.id.go_home_image_button) public ImageButton goHomeImageBtn;
   @BindView(R.id.clear_waypoints_image_button) public ImageButton clearWaypointsImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
@@ -94,12 +82,13 @@ public class MainActivity extends AppCompatActivity {
     initializeToolbar();
 
     takeOffImageBtn.setEnabled(false);
-    goHomeImageBtn.setEnabled(false);
 
     Fragment cameraFragment = new CameraFragment();
     Fragment mapFragment = new MapFragment();
     addFragmentToMain(mapFragment);
     addFragmentToSub(cameraFragment);
+
+    FileHelper.initializeWaypointDirectory();
 
 //    List<DBMission> missions = database.getMissions();
 //    System.out.println("READING DATABASE " + missions.size());
@@ -107,61 +96,76 @@ public class MainActivity extends AppCompatActivity {
 //      System.out.println(missions.get(i).getMissionId());
 //    }
 
-    Thread thread = new Thread(new Runnable() {
-
-      @Override
-      public void run() {
-        try  {
-          //Your code goes here
-          SmbFile[] domains = null;
-          try {
-            try {
-//              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", username, password);
-              SmbFile file = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/");
-              System.out.println("SD CARD PATH " + Environment.getExternalStorageDirectory().getPath());
-//              File imageFile =new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera/", "20160924_151141.jpg");
-              File imageFile =new File("/sdcard/DCIM/Camera/", "20160924_151141.jpg");
-              System.out.println("does this exist " + imageFile.exists());
-              FileInputStream fis= new FileInputStream(imageFile);
-//              String newDir = file.getPath() + "temp/";
+//    Thread thread = new Thread(new Runnable() {
 //
-//              SmbFile newFileDir = new SmbFile(newDir);
-//              newFileDir.mkdir();
-
-//              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, null, null);
-              SmbFile f = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/20160924_151141.jpg");//, auth);
-              f.createNewFile();
-              System.out.println("CREATINGGGG " + f.exists());
-              SmbFileOutputStream os = new SmbFileOutputStream(f, false);
-//              String test = "test blahblahblah";
-//              os.write(test.getBytes());
-//              FileChannel inChannel = new RandomAccessFile(imageFile, "r").getChannel();
-//              MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-//              os.write(buffer.asReadOnlyBuffer().array());
-              byte buffer[] = new byte[1024];
-              int read;
-              while((read = fis.read(buffer)) != -1){
-                System.out.println("WRITING......");
-                os.write(buffer, 0, read);
-              }
-              fis.close();
-              os.close();
-//              domains = file.listFiles();
-//              for (int i = 0; i < domains.length; i++) {
-//                System.out.println("HEREEEE " + domains[i].getName());
+//      @Override
+//      public void run() {
+//        try  {
+//          //Your code goes here
+//          SmbFile[] domains = null;
+//          try {
+//            try {
+////              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", username, password);
+//              SmbFile file = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/");
+//              System.out.println("SD CARD PATH " + Environment.getExternalStorageDirectory().getPath());
+////              File imageFile =new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera/", "20160924_151141.jpg");
+//              File imageFile =new File("/sdcard/DCIM/Camera/", "20160924_151141.jpg");
+//              System.out.println("does this exist " + imageFile.exists());
+//              FileInputStream fis= new FileInputStream(imageFile);
+////              String newDir = file.getPath() + "temp/";
+////
+////              SmbFile newFileDir = new SmbFile(newDir);
+////              newFileDir.mkdir();
+//
+////              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, null, null);
+//              SmbFile f = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/20160924_151141.jpg");//, auth);
+//              if(!f.exists()) f.createNewFile();
+//              System.out.println("CREATINGGGG " + f.exists());
+//              SmbFileOutputStream os = new SmbFileOutputStream(f, false);
+//              byte buffer[] = new byte[1024];
+//              int read;
+//              while((read = fis.read(buffer)) != -1){
+//                System.out.println("WRITING......");
+//                os.write(buffer, 0, read);
 //              }
-            } catch (MalformedURLException e){
-              e.printStackTrace();
-            }
-          } catch (SmbException e1) {
-            e1.printStackTrace();
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    });
-    thread.start();
+//              fis.close();
+//              os.close();
+//            } catch (MalformedURLException e){
+//              e.printStackTrace();
+//            }
+//          } catch (SmbException e1) {
+//            e1.printStackTrace();
+//          }
+//        } catch (Exception e) {
+//          e.printStackTrace();
+//        }
+//      }
+//    });
+//    thread.start();
+    simulateCSV();
+  }
+
+  public void simulateCSV() {
+    Date now = new Date();
+    DBMission mission = new DBMission(0, now, 1000, 12, 100.00, 200.00);
+
+    FileDirectory fd = new FileDirectory(now);
+    String parent = fd.getSubDirectoryPath();
+    System.out.println("SUB DIRECTORY PATH " + parent);
+    FileHelper.createWaypointSubDirectory(parent);
+
+    String csvContent = CSVWriter.generateFromDBMission(mission);
+    System.out.println("CONTENT " + csvContent);
+
+    String csvFilePath = fd.getCSVFilePath();
+    System.out.println("CSV FILE PATH " + csvFilePath);
+    File csvFile = new File(csvFilePath);
+    FileHelper.writeToFile(csvFile, csvContent);
+  }
+
+  public void onMissionFinished(DBMission mission) {
+    String csvContent = CSVWriter.generateFromDBMission(mission);
+    System.out.println("CONTENT " + csvContent);
   }
 
   private void initializeToolbar() {
@@ -181,7 +185,6 @@ public class MainActivity extends AppCompatActivity {
   @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
     if(missionDetails.isMissionInProgress()) {
       DrogonApplication.getBus().post(new StopMissionClicked());
-      goHomeImageBtn.setEnabled(true);
     }
     else {
       DrogonApplication.getBus().post(new TakeOffClicked());
