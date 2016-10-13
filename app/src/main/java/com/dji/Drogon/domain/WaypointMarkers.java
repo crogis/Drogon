@@ -45,7 +45,6 @@ public class WaypointMarkers {
     return markers.get(position).getPosition();
   }
 
-
   public static void addLine(Polyline p) {
     polylines.add(p);
   }

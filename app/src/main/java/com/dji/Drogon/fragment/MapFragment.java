@@ -17,14 +17,15 @@ import android.widget.Toast;
 import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
+import com.dji.Drogon.domain.Altitude;
 import com.dji.Drogon.domain.DBMission;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
-import com.dji.Drogon.event.GoHomeClicked;
 import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.event.TakeOffClicked;
+import com.dji.Drogon.helper.DistanceComputation;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -41,7 +42,6 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.squareup.otto.Subscribe;
 
-import java.util.Arrays;
 import java.util.List;
 
 import butterknife.BindView;
@@ -76,16 +76,14 @@ public class MapFragment extends Fragment {
 
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
-//  private final Map<Integer, Marker> waypointMarkers = new ConcurrentHashMap<Integer, Marker>();
 
-  private float missionAltitude = 10.0f;
   private float missionSpeed = 50.0f;//1.0f; // 1m/s
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
   private DJIMissionManager missionManager;
 
-  double meters = 0.013;
+  Altitude chosenAltitude = Altitude.LEVEL_10;
 
   LatLng homeLatLng = null;
 
@@ -129,8 +127,16 @@ public class MapFragment extends Fragment {
       public void onMapReady(GoogleMap mMap) {
         googleMap = mMap;
         googleMap.setOnMapClickListener(mapClickListener);
-        //todo remove this
+
+        //todo remove this after testing
+//        googleMap.clear();
+//        droneLocationLat = 14.609592;
+//        droneLocationLng = 121.079647;
 //        cameraUpdate();
+//        LatLng point0 = new LatLng(droneLocationLat, droneLocationLng);
+//        markHome(point0);
+
+        //todo uncomment this
         updateDroneLocation();
         setHomeCoordinate();
       }
@@ -149,6 +155,8 @@ public class MapFragment extends Fragment {
       } else {
         showNativeToast("Unable to add waypoints");
       }
+
+//      markWaypoint(point);
     }
   };
 
@@ -170,6 +178,11 @@ public class MapFragment extends Fragment {
     markers.add(marker);
     //todo move this
     markers.addLine(addPolyline());
+
+    List<LatLng> marked = DistanceComputation.getMarkersGivenDistance(markers, chosenAltitude.getCaptureDistance());
+    for(LatLng p: marked) {
+      addRectangle(p);
+    }
 
     DrogonApplication.getBus().post(new WaypointAdded());
   }
@@ -233,9 +246,9 @@ public class MapFragment extends Fragment {
           homeLatLng = new LatLng(droneLocationLat, droneLocationLng);
           markHome(homeLatLng);
           cameraUpdate();
-          hideNotification();
+//          hideNotification();
         } else if (!checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)){
-          showNotification("Drone Location Not Found");
+//          showNotification("Drone Location Not Found");
         }
       }
     });
@@ -313,7 +326,7 @@ public class MapFragment extends Fragment {
     waypointMission.removeAllWaypoints();
     for(int i = 0; i < markers.size(); i++) {
       LatLng point = markers.getPosition(i);
-      DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, missionAltitude);
+      DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, chosenAltitude.getAltitude());
       waypointMission.addWaypoint(waypoint);
     }
     configWayPointMission();
@@ -337,9 +350,9 @@ public class MapFragment extends Fragment {
       waypointMission.headingMode = missionHeadingMode;
       waypointMission.autoFlightSpeed = missionSpeed;
 
-      for (int i = 0; i< waypointMission.waypointsList.size(); i++){
-        waypointMission.getWaypointAtIndex(i).altitude = missionAltitude;
-      }
+//      for (int i = 0; i< waypointMission.waypointsList.size(); i++){
+//        waypointMission.getWaypointAtIndex(i).altitude = missionAltitude;
+//      }
       showNativeToast("Successfully set waypoints");
     }
   }
@@ -385,145 +398,17 @@ public class MapFragment extends Fragment {
 //      markHome(defaultPosition);
 //    }
 //    googleMap.moveCamera(camUpdate);
-
-    /*
-
-    LatLng center = new LatLng(14.609592, 121.079647);
-
-//    LatLng bearingLatLng = new LatLng(14.609709, 121.079457);
-    LatLng bearingLatLng = new LatLng(14.610730, 121.077298);
-
-    markWaypoint(bearingLatLng);
-    addSquare(bearingLatLng, meters);
-
-
-    //returns meters
-    Double distance = SphericalUtil.computeDistanceBetween(center, bearingLatLng);
-    Double heading = SphericalUtil.computeHeading(center, bearingLatLng);
-    System.out.println("DISTANCE " + distance);
-    System.out.println("HEADING " + heading);
-
-    Location init = new Location("init");
-    init.setLatitude(14.609592);
-    init.setLongitude(121.079647);
-
-    Location finalz = new Location("finals");
-    finalz.setLatitude(14.610730);
-    finalz.setLongitude(121.077298);
-    System.out.println("HEADINGZ " + init.bearingTo(finalz));
-    System.out.println("HEADINGZ1 " + bearingInRadians(center, bearingLatLng));
-    System.out.println("HEADINGZ2 " + bearingInDegrees(center, bearingLatLng));
-
-
-//    double bearing = angleFromCoordinate2(center, bearingLatLng);
-//    LatLng dest = GetDestinationPoint(center, (float) bearing, (float)meters);
-   */
-
   }
 
-  public static double bearingInRadians(LatLng src, LatLng dst) {
-    double srcLat = Math.toRadians(src.latitude);
-    double dstLat = Math.toRadians(dst.latitude);
-    double dLng = Math.toRadians(dst.longitude - src.longitude);
-
-    return Math.atan2(Math.sin(dLng) * Math.cos(dstLat),
-            Math.cos(srcLat) * Math.sin(dstLat) -
-                    Math.sin(srcLat) * Math.cos(dstLat) * Math.cos(dLng));
-  }
-
-  public static double bearingInDegrees(LatLng src, LatLng dst) {
-    return Math.toDegrees((bearingInRadians(src, dst) + Math.PI) % Math.PI);
-  }
-
-  private void addSquare(LatLng center, double meters) {
-    LatLng one = doSomething(center, meters, 0); // |
-    LatLng two = doSomething(center, -meters, 0); // |
-
-    LatLng upperRight = doSomething(one, 0, meters);
-    LatLng upperLeft = doSomething(one, 0, -meters);
-
-    LatLng lowerRight = doSomething(two, 0, meters);
-    LatLng lowerLeft = doSomething(two, 0, -meters);
-
-    System.out.println("ONE " + one.toString());
-    System.out.println("upper right " + upperRight.toString());
-    System.out.println("upper left " + upperLeft.toString());
-    System.out.println("lower right " + lowerRight.toString());
-    System.out.println("lower right " + lowerLeft.toString());
-
-    List<LatLng> d = Arrays.asList(upperRight, upperLeft, lowerLeft, lowerRight);
-
-    googleMap.addPolygon(
-            new PolygonOptions()
-                    .addAll(d)
-                    .fillColor(Color.CYAN)
-                    .strokeColor(Color.BLUE)
-                    .strokeWidth(5)
+  private void addRectangle(LatLng center) {
+    List<LatLng> d  = DistanceComputation.getSquareCoordinates(center, chosenAltitude.getHeightInKM(), chosenAltitude.getWidthInKM());
+    int color = getResources().getColor(R.color.transparentWhite);
+    googleMap.addPolygon(new PolygonOptions()
+      .addAll(d)
+      .fillColor(color)
+      .strokeColor(Color.BLACK)
+      .strokeWidth(2)
     );
-
-  }
-
-  //radius of the earth
-  double rEarth = 6378;//km
-
-  private LatLng doSomething(LatLng center, double dy, double dx) {
-    double newLatitude  = center.latitude  + (dy / rEarth) * (180 / Math.PI);
-    double newLongitude = center.longitude + (dx / rEarth) * (180 / Math.PI) / Math.cos(center.latitude * Math.PI/180);
-    return new LatLng(newLatitude, newLongitude);
-  }
-
-  public static LatLng GetDestinationPoint(LatLng startLoc, float bearing, float depth) {
-
-    double radius = 6371.0; // earth's mean radius in km
-    double lat1 = Math.toRadians(startLoc.latitude);
-    double lng1 = Math.toRadians(startLoc.longitude);
-    double brng = Math.toRadians(bearing);
-    double lat2 = Math.asin( Math.sin(lat1)*Math.cos(depth/radius) + Math.cos(lat1)*Math.sin(depth/radius)*Math.cos(brng) );
-    double lng2 = lng1 + Math.atan2(Math.sin(brng)*Math.sin(depth/radius)*Math.cos(lat1), Math.cos(depth/radius)-Math.sin(lat1)*Math.sin(lat2));
-    lng2 = (lng2+Math.PI)%(2*Math.PI) - Math.PI;
-
-    // normalize to -180...+180
-//    if (lat2 == 0 || lng2 == 0)
-//    {
-//      newLocation.setLatitude(0.0);
-//      newLocation.setLongitude(0.0);
-//    }
-//    else
-//    {
-//      newLocation.setLatitude(Math.toDegrees(lat2));
-//      newLocation.setLongitude(Math.toDegrees(lng2));
-//    }
-    return new LatLng(Math.toDegrees(lat2), Math.toDegrees(lng2));
-  }
-
-  private double angleFromCoordinate2(LatLng init, LatLng finalz) {
-    double lat1 = init.latitude;
-    double long1 = init.longitude;
-
-    double lat2 = finalz.latitude;
-    double long2 = finalz.longitude;
-
-    double dLon = (long2 - long1);
-
-    double y = Math.sin(dLon) * Math.cos(lat2);
-    double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1)
-            * Math.cos(lat2) * Math.cos(dLon);
-
-    double brng = Math.atan2(y, x);
-
-    brng = Math.toDegrees(brng);
-    brng = (brng + 360) % 360;
-    brng = 360 - brng;
-
-    return brng;
-  }
-
-  private List<LatLng> createRectangle(LatLng center, double halfWidth, double halfHeight) {
-    return Arrays.asList(new LatLng(center.latitude - halfHeight, center.longitude - halfWidth),
-            new LatLng(center.latitude - halfHeight, center.longitude + halfWidth),
-            new LatLng(center.latitude + halfHeight, center.longitude + halfWidth),
-            new LatLng(center.latitude + halfHeight, center.longitude - halfWidth),
-            new LatLng(center.latitude - halfHeight, center.longitude - halfWidth));
   }
 
   private DJICompletionCallback setMissionExecutionCallback = new DJICompletionCallback() {

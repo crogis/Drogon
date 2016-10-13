@@ -142,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
 //      }
 //    });
 //    thread.start();
-    simulateCSV();
+//    simulateCSV();
+
   }
 
   public void simulateCSV() {
