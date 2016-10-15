@@ -187,12 +187,6 @@ public class MainActivity extends AppCompatActivity {
 
         if(isNotNull(remoteController) && isNotNull(flightController)) {
           final DJIFlightController _flightController = flightController;
-          runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-              flightModeTextView.setText(_flightController.getCurrentState().getFlightMode().toString());
-            }
-          });
           remoteController.getHardwareStateUpdateCallback();
           remoteController.setHardwareStateUpdateCallback(new DJIRemoteController.RCHardwareStateUpdateCallback() {
             @Override
