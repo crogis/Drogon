@@ -21,7 +21,6 @@ public final class Mission {
 
     public static final String COLUMN_NAME_MISSION_ID = "mission_id";
     public static final String COLUMN_NAME_DATE_TIME = "date_time";
-//    public static final String COLUMN_NAME_TIME = "time";
     public static final String COLUMN_NAME_FLIGHT_DURATION = "flight_duration";
     public static final String COLUMN_NAME_NUM_PICS_TAKEN = "num_pics_taken";
     public static final String COLUMN_NAME_HOME_LAT = "home_lat";

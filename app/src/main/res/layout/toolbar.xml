@@ -12,7 +12,8 @@
             <ImageView style="@style/ToolbarImageView"
               android:src="@drawable/battery"/>
             <TextView style="@style/ToolbarTextView"
-              android:text="100%"/>
+                      android:id="@+id/battery_text_view"
+                      android:text="N/A"/>
         </LinearLayout>
 
         <LinearLayout style="@style/ToolbarEndLayout">

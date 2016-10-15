@@ -1,13 +1,13 @@
 package com.dji.Drogon.event;
 
 public class FragmentChange {
-  private boolean isCameraFragmentMain;
+  private boolean isMapFragmentMain;
 
-  public FragmentChange(boolean isCameraFragmentMain) {
-    this.isCameraFragmentMain = isCameraFragmentMain;
+  public FragmentChange(boolean isMapFragmentMain) {
+    this.isMapFragmentMain = isMapFragmentMain;
   }
 
-  public boolean getIsCameraFragmentMain() {
-    return isCameraFragmentMain;
+  public boolean getIsMapFragmentMain() {
+    return isMapFragmentMain;
   }
 }

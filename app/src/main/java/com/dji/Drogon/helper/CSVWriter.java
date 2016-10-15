@@ -2,7 +2,8 @@ package com.dji.Drogon.helper;
 
 import android.text.TextUtils;
 
-import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.ReadableDBMission;
+import com.dji.Drogon.domain.WritableDBMission;
 
 import java.text.SimpleDateFormat;
 
@@ -12,7 +13,7 @@ public class CSVWriter {
   private static SimpleDateFormat dateFormat = DateFormatter.getReadableDateFormat();
 
   //int missionId, Date dateTime, int flightDuration, int numPicsTaken, double homeLat, double homeLng
-  public static String generateFromDBMission(DBMission mission) {
+  public static String generateFromDBMission(ReadableDBMission mission) {
     String missionId = String.valueOf(mission.getMissionId());
     String dateTime = dateFormat.format(mission.getDateTime());
     String flightDuration = String.valueOf(mission.getFlightDuration());

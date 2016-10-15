@@ -1,5 +1,9 @@
 package com.dji.Drogon.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -13,15 +17,21 @@ import android.widget.Toast;
 
 import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.R;
+import com.dji.Drogon.domain.MainLayoutDimens;
+import com.dji.Drogon.event.CaptureImageClicked;
 import com.dji.Drogon.event.FragmentChange;
 import com.squareup.otto.Subscribe;
 
 import dji.sdk.Camera.DJICamera;
+import dji.sdk.Camera.DJICameraSettingsDef;
+import dji.sdk.Camera.DJICameraSettingsDef.*;
 import dji.sdk.Codec.DJICodecManager;
+import dji.sdk.base.DJIBaseComponent;
 import dji.sdk.base.DJIBaseProduct;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import dji.sdk.base.DJIError;
 
 public class CameraFragment extends Fragment implements TextureView.SurfaceTextureListener {
 
@@ -29,11 +39,19 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   protected DJICamera.CameraReceivedVideoDataCallback receivedVideoDataCallback = null;
   protected DJICodecManager codecManager = null;
 
+  MainLayoutDimens dimens = MainLayoutDimens.getInstance();
+
   @BindView(R.id.video_surface_texture_view) TextureView videoSurfaceTextureView;
 
   private boolean isMapFragmentMain = true;
-  //Height and width of the full screen
-  private int originalWidth, originalHeight = 0;
+
+  protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      onProductChange();
+    }
+  };
+
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -49,6 +67,11 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     View view = inflater.inflate(R.layout.fragment_camera, container, false);
     ButterKnife.bind(this, view);
 
+    //Register BroadcastReceiver
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE_FRAGMENT);
+    getContext().registerReceiver(onConnectionChangeReceiver, filter);
+
     videoSurfaceTextureView.setSurfaceTextureListener(this);
 
     receivedVideoDataCallback = new DJICamera.CameraReceivedVideoDataCallback() {
@@ -57,7 +80,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
         //send the raw H264 video data to codec manager for decoding
         if(isNotNull(codecManager)) codecManager.sendDataToDecoder(videoBuffer, size);
         else {
-          showToast("codecManager is null");
+//          showToast("codecManager is null");
           Log.e(TAG, "codecManager is null");
         }
       }
@@ -69,10 +92,31 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   @Subscribe
   public void onFragmentChange(FragmentChange change) {
     System.out.println("ON FRAGMENT CHANGE " + videoSurfaceTextureView.getWidth());
-    isMapFragmentMain = change.getIsCameraFragmentMain();
+    isMapFragmentMain = change.getIsMapFragmentMain();
     if(isNotNull(codecManager)) {
       codecManager.cleanSurface();
       codecManager = null;
+    }
+  }
+
+  @Subscribe
+  public void onCaptureImageClicked(CaptureImageClicked clicked) {
+    DJIBaseProduct product = DrogonApplication.getProductInstance();
+    if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+      DJICamera camera = product.getCamera();
+      if(isNotNull(camera)) {
+        CameraMode cameraMode = CameraMode.ShootPhoto;
+        if(isNotNull(camera)) {
+          CameraShootPhotoMode photoMode = CameraShootPhotoMode.Single;
+          camera.startShootPhoto(photoMode, new DJIBaseComponent.DJICompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+//              String msg = isNotNull(djiError) ? djiError.getDescription() : "SUCCESS!";
+//              showToast("CAPTURED " + msg);
+            }
+          });
+        }
+      }
     }
   }
 
@@ -80,19 +124,18 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
     Log.e(TAG, "onSurfaceTextureAvailable");
     if(isNull(codecManager)) {
-      originalWidth = width;
-      originalHeight = height;
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
   }
 
   @Override
   public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-    Log.e(TAG, "onSurfaceTextureSizeChanged " + " width: " +  width + " width: " + height);
+    Log.e(TAG, "onSurfaceTextureSizeChanged1 " + " width: " +  width + " width: " + height);
 
     boolean mainCondition = isNull(codecManager);
-    boolean condition1 = mainCondition && isMapFragmentMain && width == originalWidth && height == originalHeight;
-    boolean condition2 = mainCondition && !isMapFragmentMain;
+    boolean condition1 = mainCondition && !isMapFragmentMain && width == dimens.getWidth() && height == dimens.getHeight();
+    boolean condition2 = mainCondition && isMapFragmentMain;
+
     if (condition1 || condition2) {
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
@@ -114,18 +157,31 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   protected void onProductChange() {
     initPreviewer();
   }
+  String test = "heyo";
 
   private void initPreviewer() {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
     if(isNull(product) || !product.isConnected()) {
-      showToast(getString(R.string.disconnected));
+//      showToast(getString(R.string.disconnected));
+      uninitPreviewer();
     } else {
+//      showToast("CONNECTED!!!!");
       if(isNotNull(videoSurfaceTextureView)) {
         videoSurfaceTextureView.setSurfaceTextureListener(this);
       }
       if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
         DJICamera camera = product.getCamera();
         if(isNotNull(camera)) {
+          test = "heyo processed";
+          camera.setCameraMode(CameraMode.ShootPhoto, new DJIBaseComponent.DJICompletionCallback() {
+            @Override
+            public void onResult(DJIError error) {
+              if(isNotNull(error)) {
+//                showToast("error setting camera mode! " + error.getDescription());
+                Log.e(TAG, "Error setting camera mode " + error.getDescription());
+              }
+            }
+          });
           camera.setDJICameraReceivedVideoDataCallback(receivedVideoDataCallback);
         }
       }
@@ -161,7 +217,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   }
 
   public void showToast(String msg) {
-    Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
+    Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
   }
 
   public <T> boolean isNotNull(T i) {

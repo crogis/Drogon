@@ -2,13 +2,13 @@ package com.dji.Drogon.domain;
 
 import java.util.Date;
 
-public class DBMission {
+public class ReadableDBMission {
 
   private int missionId, flightDuration, numPicsTaken;
   private Date dateTime;
   private double homeLat, homeLng;
 
-  public DBMission(int missionId, Date dateTime, int flightDuration, int numPicsTaken, double homeLat, double homeLng) {
+  public ReadableDBMission(int missionId, Date dateTime, int flightDuration, int numPicsTaken, double homeLat, double homeLng) {
     this.missionId = missionId;
     this.dateTime = dateTime;
     this.flightDuration = flightDuration;

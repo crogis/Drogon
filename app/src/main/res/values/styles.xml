@@ -111,5 +111,6 @@
   </style>
   <style name="ToolbarTextView" parent="WrapContent">
     <item name="android:layout_height">20dp</item>
+    <item name="android:textColor">@android:color/white</item>
   </style>
 </resources>

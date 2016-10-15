@@ -1,7 +1,14 @@
 package com.dji.Drogon;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.*;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -11,21 +18,28 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.db.DrogonDatabase;
-import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.ReadableDBMission;
+import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.domain.FileDirectory;
+import com.dji.Drogon.domain.MainLayoutDimens;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
+import com.dji.Drogon.event.CaptureImageClicked;
 import com.dji.Drogon.event.ClearWaypointsClicked;
 import com.dji.Drogon.event.FragmentChange;
+import com.dji.Drogon.event.MissionCompleted;
 import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.TakeOffClicked;
 import com.dji.Drogon.event.WaypointAdded;
@@ -37,17 +51,32 @@ import com.dji.Drogon.fragment.MapFragment;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Date;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dji.sdk.Battery.DJIBattery.*;
+import dji.sdk.Gimbal.DJIGimbal;
+import dji.sdk.Gimbal.DJIGimbal.*;
+import dji.sdk.base.DJIBaseComponent;
+import dji.sdk.base.DJIBaseProduct;
+import dji.sdk.base.DJIError;
+import dji.sdk.util.DJIParamMinMaxCapability;
+import jcifs.smb.SmbException;
+import jcifs.smb.SmbFile;
+import jcifs.smb.SmbFileOutputStream;
 
 public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.main_fragment) FrameLayout mainLayout;
   @BindView(R.id.sub_fragment) FrameLayout subLayout;
   @BindView(R.id.border_layout) FrameLayout borderLayout;
+  @BindView(R.id.center_linear_layout) LinearLayout centerLayout;
 
   @BindView(R.id.parent_fragment_layout) RelativeLayout parentLayout;
   @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
@@ -55,8 +84,10 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
   @BindView(R.id.take_off_image_button) public ImageButton takeOffImageBtn;
   @BindView(R.id.clear_waypoints_image_button) public ImageButton clearWaypointsImageBtn;
+  @BindView(R.id.capture_image_btn) ImageButton captureImageBtn;
 
   @BindView(R.id.toolbar) Toolbar toolbar;
+  @BindView(R.id.battery_text_view) TextView batteryTextView;
 
   //todo revert to private after testing
   @BindView(R.id.dropdown_notification_layout) public LinearLayout notificationLayout;
@@ -66,8 +97,37 @@ public class MainActivity extends AppCompatActivity {
 
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
+  MainLayoutDimens dimens = MainLayoutDimens.getInstance();
 
   public DrogonDatabase database = new DrogonDatabase(this);
+
+  private final String IP_ADDRESS_PREFERENCE = "ip_address";
+
+  protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      DJIBaseProduct product = DrogonApplication.getProductInstance();
+//      System.out.println("MAIN ACTIVITY AIRCRAFT CONNECTED " + DrogonApplication.isAircraftConnected());
+      if(isNotNull(product)) {
+        product.getBattery().setBatteryStateUpdateCallback(new DJIBatteryStateUpdateCallback() {
+          @Override
+          public void onResult(DJIBatteryState batteryState) {
+            final String percentage = batteryState.getBatteryEnergyRemainingPercent() + "%";
+            runOnUiThread(new Runnable() {
+              @Override
+              public void run() {
+                batteryTextView.setText(percentage);
+              }
+            });
+          }
+        });
+//        DJIRemoteController remoteController = ((DJIAircraft) product).getRemoteController();
+//        remoteController
+      }
+
+      captureImageBtn.setEnabled(isNotNull(product));
+    }
+  };
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
     initializeToolbar();
 
     takeOffImageBtn.setEnabled(false);
+    captureImageBtn.setEnabled(false);
 
     Fragment cameraFragment = new CameraFragment();
     Fragment mapFragment = new MapFragment();
@@ -90,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
     FileHelper.initializeWaypointDirectory();
 
-//    List<DBMission> missions = database.getMissions();
+//    List<WritableDBMission> missions = database.getMissions();
 //    System.out.println("READING DATABASE " + missions.size());
 //    for(int i = 0; i < missions.size(); i++) {
 //      System.out.println(missions.get(i).getMissionId());
@@ -144,11 +205,27 @@ public class MainActivity extends AppCompatActivity {
 //    thread.start();
 //    simulateCSV();
 
+    simulateCSV();
+  }
+
+  @Subscribe
+  public void onMissionCompleted(MissionCompleted missionCompleted) {
+    int rowId = missionCompleted.getRowId();
+    List<ReadableDBMission> missions = database.getMissions();
+    final ReadableDBMission mission = missions.get(rowId);
+    if(isNotNull(mission)) {
+      runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          Toast.makeText(getApplicationContext(), "WRITING MISSION " + mission.getDateTime().toString(), Toast.LENGTH_SHORT).show();
+        }
+      });
+    }
   }
 
   public void simulateCSV() {
     Date now = new Date();
-    DBMission mission = new DBMission(0, now, 1000, 12, 100.00, 200.00);
+    ReadableDBMission mission = new ReadableDBMission(1, now, 1, 1, 100.00, 200.00);
 
     FileDirectory fd = new FileDirectory(now);
     String parent = fd.getSubDirectoryPath();
@@ -162,11 +239,65 @@ public class MainActivity extends AppCompatActivity {
     System.out.println("CSV FILE PATH " + csvFilePath);
     File csvFile = new File(csvFilePath);
     FileHelper.writeToFile(csvFile, csvContent);
+
+    sendToServer(csvFile, fd.getBaseFileName());
   }
 
-  public void onMissionFinished(DBMission mission) {
-    String csvContent = CSVWriter.generateFromDBMission(mission);
-    System.out.println("CONTENT " + csvContent);
+  private void sendToServer(final File csvFile, final String dirName) {
+    final String ipAddress = getPreferenceString(IP_ADDRESS_PREFERENCE).trim();
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try  {
+          try {
+            try {
+              URL u = new URL(ipAddress);
+              final String hostPath = u.getHost() + u.getPath();
+              FileInputStream fis= new FileInputStream(csvFile);
+
+              String ipAddressPath = "smb://" + hostPath + "/" + dirName;
+
+              showNotification("Sending files to: " + hostPath);
+
+              System.out.println("IP ADDRESS PATH " + ipAddressPath);
+              SmbFile dir = new SmbFile(ipAddressPath);
+              if(!dir.exists()) dir.mkdir();
+
+              SmbFile f = new SmbFile(ipAddressPath + "/" + csvFile.getName());
+              if(!f.exists()) f.createNewFile();
+              SmbFileOutputStream os = new SmbFileOutputStream(f, false);
+              byte buffer[] = new byte[1024];
+              int read;
+              while((read = fis.read(buffer)) != -1){
+                os.write(buffer, 0, read);
+              }
+              fis.close();
+              os.close();
+
+              hideNotification();
+
+            } catch (final MalformedURLException e){
+              showSendingErrorToast(e.getMessage());
+              e.printStackTrace();
+            }
+          } catch (final SmbException e) {
+            showSendingErrorToast(e.getMessage());
+            e.printStackTrace();
+          }
+        } catch (Exception e) {
+          showSendingErrorToast(e.getMessage());
+          e.printStackTrace();
+        }
+      }
+    });
+    if(ipAddress.length() > 0) {
+      thread.start();
+    }
+  }
+
+  private void showSendingErrorToast(final String msg) {
+    hideNotification();
+    showNativeToast("Unable to send files: " + msg);
   }
 
   private void initializeToolbar() {
@@ -198,7 +329,14 @@ public class MainActivity extends AppCompatActivity {
     configureLeftSideButtons();
   }
 
+  @OnClick(R.id.capture_image_btn) void onCaptureImageClicked() {
+    DrogonApplication.getBus().post(new CaptureImageClicked());
+  }
+
   @OnClick(R.id.border_layout) void onFragmentChange() {
+    //put somewhere else
+    dimens.setDimens(centerLayout.getWidth(), centerLayout.getHeight());
+
     final CustomLayoutParams cp = new CustomLayoutParams(subLayout);
     FillScreenAnimation fillScreenAnimation =
             new FillScreenAnimation(
@@ -244,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
   @Subscribe
   public void onWaypointAdded(WaypointAdded m) {
     if(markers.size() <= 2) {
-      showToast("Add more waypoints before take-off!");
+      showToast("Add more waypoints before take-off! " + markers.size());
     }
     configureLeftSideButtons();
   }
@@ -269,38 +407,134 @@ public class MainActivity extends AppCompatActivity {
     builder.setView(v);
     final AlertDialog dialog = builder.create();
     ImageButton btn = (ImageButton)v.findViewById(R.id.close_btn);
+    SeekBar sb = (SeekBar) v.findViewById(R.id.angle_seek_bar);
+    final EditText editText = (EditText) v.findViewById(R.id.ip_address_edit_text);
+
     btn.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+        String ipAddress = editText.getText().toString().trim();
+        if(ipAddress.length() > 0) {
+          try {
+            URL u = new URL(ipAddress);
+            String protocol  = u.getProtocol();
+            String host = u.getHost();
+            String path = u.getPath();
+            if(path.charAt(path.length() - 1) == '/') {
+              path = path.substring(0, path.length() - 1);
+              u = new URL(protocol, host, path);
+            }
+
+            putPreferenceString(IP_ADDRESS_PREFERENCE, u.toString());
+          } catch (MalformedURLException e) {
+            showToast("Invalid URL");
+          }
+        } else removePreference(IP_ADDRESS_PREFERENCE);
         dialog.dismiss();
       }
+    });
+
+    String ipAddress = getPreferenceString(IP_ADDRESS_PREFERENCE).trim();
+    if(ipAddress.length() > 0)
+      editText.setText(ipAddress);
+
+    final DJIGimbalAngleRotation mYawRotation = new DJIGimbalAngleRotation(false, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
+    final DJIGimbalAngleRotation mRollRotation = new DJIGimbal.DJIGimbalAngleRotation(false, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
+
+    sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+      @Override
+      public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+        System.out.println("SEEKBAR " + i);
+
+        DJIGimbal gimbal = DrogonApplication.getGimbalInstance();
+
+        if(isNotNull(gimbal)) {
+          DJIGimbalAngleRotation mPitchRotation = new DJIGimbalAngleRotation(true, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
+          DJIParamMinMaxCapability minMaxCapability = ((DJIParamMinMaxCapability)gimbal.gimbalCapability.get(DJIGimbal.DJIGimbalCapabilityKey.AdjustPitch));
+          Number min = minMaxCapability.getMin().floatValue();
+          Number max = minMaxCapability.getMax().floatValue();
+//          showToast("MIN " + min + " MAX " + max);
+//-90 min, 30 max
+          mPitchRotation.direction = DJIGimbal.DJIGimbalRotateDirection.Clockwise;
+          mPitchRotation.angle = min.floatValue();
+
+          gimbal.rotateGimbalByAngle(DJIGimbalRotateAngleMode.AbsoluteAngle, mPitchRotation, null, null,
+            new DJIBaseComponent.DJICompletionCallback() {
+              @Override
+              public void onResult(final DJIError djiError) {
+                runOnUiThread(new Runnable() {
+                  @Override
+                  public void run() {
+                    if(isNotNull(djiError)) {
+                      showToast("ERROR " + djiError.getDescription());
+                    } else showToast("SUCCESS!!");
+                  }
+                });
+              }
+            }
+          );
+//          gimbal.rotateGimbalByAngle();
+        }
+
+      }
+
+      @Override
+      public void onStartTrackingTouch(SeekBar seekBar) {}
+      @Override
+      public void onStopTrackingTouch(SeekBar seekBar) {}
     });
     dialog.show();
   }
 
-  public void showToast(String message) {
-    showNotification(message);
-    new Handler().postDelayed(new Runnable() {
+  public void showToast(final String message) {
+    runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        hideNotification();
+        showNotification(message);
+        new Handler().postDelayed(new Runnable() {
+          @Override
+          public void run() {
+            hideNotification();
+          }
+        }, 3500);
       }
-    }, 3500);
+    });
   }
 
-  public void showNotification(String message) {
-    if(notificationLayout.getVisibility() == View.GONE) {
-      ExpandCollapseAnimation enterAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 0);
-      notificationLayout.startAnimation(enterAnimation);
-      notificationTextView.setText(message);
-    }
+  public void showNativeToast(final String message) {
+    final Context c = this;
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Toast.makeText(c, message, Toast.LENGTH_LONG).show();
+      }
+    });
+  }
+
+  public void showNotification(final String message) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if(notificationLayout.getVisibility() == View.GONE) {
+          ExpandCollapseAnimation enterAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 0);
+          notificationLayout.startAnimation(enterAnimation);
+          notificationTextView.setText(message);
+        }
+      }
+    });
+
   }
 
   public void hideNotification() {
-    if(notificationLayout.getVisibility() == View.VISIBLE) {
-      ExpandCollapseAnimation exitAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 1);
-      notificationLayout.startAnimation(exitAnimation);
-    }
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if(notificationLayout.getVisibility() == View.VISIBLE) {
+          ExpandCollapseAnimation exitAnimation = new ExpandCollapseAnimation(notificationLayout, notificationTextView, 1000, 1);
+          notificationLayout.startAnimation(exitAnimation);
+        }
+      }
+    });
   }
 
   private void addFragmentToMain(Fragment main) {
@@ -315,6 +549,21 @@ public class MainActivity extends AppCompatActivity {
     getSupportFragmentManager().beginTransaction().add(id, f).commit();
   }
 
+  private void putPreferenceString(String key, String value) {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    preferences.edit().putString(key, value).apply();
+  }
+
+  private String getPreferenceString(String key) {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return preferences.getString(key, "");
+  }
+
+  private void removePreference(String key) {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    preferences.edit().remove(key).apply();
+  }
+
   public <T> boolean isNotNull(T i) {
     return i != null;
   }
@@ -326,8 +575,21 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onResume() {
     super.onResume();
+
+    //Register BroadcastReceiver
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE);
+    registerReceiver(onConnectionChangeReceiver, filter);
+
     DrogonApplication.getBus().register(this);
   }
+
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    unregisterReceiver(onConnectionChangeReceiver);
+  }
+
 
   @Override
   protected void onPause() {

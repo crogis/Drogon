@@ -7,7 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.dji.Drogon.db.domain.Mission.*;
-import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.ReadableDBMission;
+import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.helper.DateFormatter;
 
 import java.text.ParseException;
@@ -48,7 +49,7 @@ public class DrogonDatabase extends SQLiteOpenHelper {
 
   }
 
-  public void insertMission(DBMission mission) {
+  public int insertMission(WritableDBMission mission) {
     SQLiteDatabase db = getWritableDatabase();
     ContentValues values = new ContentValues();
     values.put(MissionEntry.COLUMN_NAME_DATE_TIME, dateFormat.format(mission.getDateTime()));
@@ -56,11 +57,11 @@ public class DrogonDatabase extends SQLiteOpenHelper {
     values.put(MissionEntry.COLUMN_NAME_NUM_PICS_TAKEN, mission.getNumPicsTaken());
     values.put(MissionEntry.COLUMN_NAME_HOME_LAT, mission.getHomeLat());
     values.put(MissionEntry.COLUMN_NAME_HOME_LNG, mission.getHomeLng());
-    db.insert(MissionEntry.TABLE_NAME, null, values);
+    return (int) db.insert(MissionEntry.TABLE_NAME, null, values);
   }
 
-  public List<DBMission> getMissions() {
-    List<DBMission> missions = new ArrayList<>();
+  public List<ReadableDBMission> getMissions() {
+    List<ReadableDBMission> missions = new ArrayList<>();
     SQLiteDatabase db = getReadableDatabase();
     Cursor cursor = db.query(MissionEntry.TABLE_NAME, null, null, null, null, null, null, null);
     cursor.moveToFirst();
@@ -71,7 +72,7 @@ public class DrogonDatabase extends SQLiteOpenHelper {
     return missions;
   }
 
-  private List<DBMission> readDBMission(Cursor cursor, List<DBMission> missions) {
+  private List<ReadableDBMission> readDBMission(Cursor cursor, List<ReadableDBMission> missions) {
     if(!cursor.isAfterLast()) {
       ValueGetter v = new ValueGetter(cursor);
       Date date;
@@ -82,7 +83,7 @@ public class DrogonDatabase extends SQLiteOpenHelper {
         date = new Date();
       }
 
-      DBMission mission = new DBMission(
+      ReadableDBMission mission = new ReadableDBMission(
         v.getInt(MissionEntry.COLUMN_NAME_MISSION_ID),
         date,
         v.getInt(MissionEntry.COLUMN_NAME_FLIGHT_DURATION),

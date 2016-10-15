@@ -10,6 +10,7 @@ import android.widget.Toast;
 import com.squareup.otto.Bus;
 
 import dji.sdk.Camera.DJICamera;
+import dji.sdk.Gimbal.DJIGimbal;
 import dji.sdk.Products.DJIAircraft;
 import dji.sdk.Products.DJIHandHeld;
 import dji.sdk.SDKManager.DJISDKManager;
@@ -17,11 +18,13 @@ import dji.sdk.SDKManager.DJISDKManager.*;
 import dji.sdk.base.DJIBaseComponent;
 import dji.sdk.base.DJIBaseProduct;
 import dji.sdk.base.DJIError;
+import dji.sdk.base.DJIGimbalError;
 import dji.sdk.base.DJISDKError;
 
 public class DrogonApplication extends Application {
 
   public static final String FLAG_CONNECTION_CHANGE = "drogon_connection_change";
+  public static final String FLAG_CONNECTION_CHANGE_FRAGMENT = "drogon_connection_change_fragment";
 
   private static DJIBaseProduct mProduct;
 
@@ -122,6 +125,10 @@ public class DrogonApplication extends Application {
     return (getProductInstance() == null) ? null : getProductInstance().getCamera();
   }
 
+  public static synchronized DJIGimbal getGimbalInstance() {
+    return (getProductInstance() == null) ? null : getProductInstance().getGimbal();
+  }
+
   public static boolean isAircraftConnected() {
     DJIBaseProduct product = getProductInstance();
     return product != null && product.isConnected() && product instanceof DJIAircraft;
@@ -141,6 +148,9 @@ public class DrogonApplication extends Application {
     public void run() {
       Intent intent = new Intent(FLAG_CONNECTION_CHANGE);
       sendBroadcast(intent);
+
+      Intent intent2 = new Intent(FLAG_CONNECTION_CHANGE_FRAGMENT);
+      sendBroadcast(intent2);
     }
   };
 

@@ -35,13 +35,16 @@
                 android:src="@drawable/take_off"
                 android:layout_marginBottom="15dp"/>
         </LinearLayout>
-        <LinearLayout style="@style/CenterLayout"/>
+        <LinearLayout style="@style/CenterLayout"
+                      android:id="@+id/center_linear_layout"
+                      android:orientation="vertical"/>
         <RelativeLayout style="@style/LeftRightLayout"
             android:id="@+id/settings_layout"
             android:gravity="center_horizontal"
             android:visibility="invisible">
             <ImageButton style="@style/CaptureImageButton"
-                android:background="@drawable/capture_btn"/>
+                         android:id="@+id/capture_image_btn"
+                         android:background="@drawable/capture_btn"/>
             <ImageButton style="@style/SettingsImageButton"
                 android:id="@+id/settings_image_button"
                 android:src="@drawable/settings"

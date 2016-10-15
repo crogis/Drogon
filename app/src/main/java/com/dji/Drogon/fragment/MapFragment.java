@@ -18,10 +18,11 @@ import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
 import com.dji.Drogon.domain.Altitude;
-import com.dji.Drogon.domain.DBMission;
+import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
+import com.dji.Drogon.event.MissionCompleted;
 import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.event.TakeOffClicked;
@@ -42,10 +43,14 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.squareup.otto.Subscribe;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import dji.sdk.Camera.DJICamera;
+import dji.sdk.Camera.DJICameraSettingsDef;
 import dji.sdk.FlightController.DJIFlightController;
 import dji.sdk.FlightController.DJIFlightControllerDataType.*;
 import dji.sdk.FlightController.DJIFlightControllerDelegate.*;
@@ -57,6 +62,7 @@ import dji.sdk.MissionManager.DJIWaypoint;
 import dji.sdk.MissionManager.DJIWaypointMission;
 import dji.sdk.MissionManager.DJIWaypointMission.*;
 import dji.sdk.Products.DJIAircraft;
+import dji.sdk.base.DJIBaseComponent;
 import dji.sdk.base.DJIBaseComponent.*;
 import dji.sdk.base.DJIBaseProduct;
 import dji.sdk.base.DJIError;
@@ -77,7 +83,7 @@ public class MapFragment extends Fragment {
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
 
-  private float missionSpeed = 50.0f;//1.0f; // 1m/s
+  private float missionSpeed = 10.0f;//1.0f; // 1m/s
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
@@ -86,6 +92,8 @@ public class MapFragment extends Fragment {
   Altitude chosenAltitude = Altitude.LEVEL_10;
 
   LatLng homeLatLng = null;
+
+  WritableDBMission writableDBMission = null;
 
   protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
     @Override
@@ -110,7 +118,7 @@ public class MapFragment extends Fragment {
 
     //Register BroadcastReceiver
     IntentFilter filter = new IntentFilter();
-    filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE);
+    filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE_FRAGMENT);
     getContext().registerReceiver(onConnectionChangeReceiver, filter);
 
     mapView.onCreate(savedInstanceState);
@@ -160,6 +168,8 @@ public class MapFragment extends Fragment {
     }
   };
 
+  List<LatLng> marked = new ArrayList<>();
+
   private void markHome(LatLng point) {
     markLocation(point, R.drawable.green_circle);
   }
@@ -179,7 +189,7 @@ public class MapFragment extends Fragment {
     //todo move this
     markers.addLine(addPolyline());
 
-    List<LatLng> marked = DistanceComputation.getMarkersGivenDistance(markers, chosenAltitude.getCaptureDistance());
+    marked = DistanceComputation.getMarkersGivenDistance(markers, chosenAltitude.getCaptureDistance());
     for(LatLng p: marked) {
       addRectangle(p);
     }
@@ -218,16 +228,19 @@ public class MapFragment extends Fragment {
       missionManager = null;
     }
 
-    showNativeToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
+//    showNativeToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
 
     if(isNotNull(flightController)) {
-      showNativeToast("setting state callback");
       flightController.setUpdateSystemStateCallback(new FlightControllerUpdateSystemStateCallback(){
         @Override
         public void onResult(DJIFlightControllerCurrentState state) {
           DJILocationCoordinate3D aircraftLocation = state.getAircraftLocation();
           droneLocationLat = aircraftLocation.getLatitude();
           droneLocationLng = aircraftLocation.getLongitude();
+          int index = marked.indexOf(new LatLng(droneLocationLat, droneLocationLng));
+          if(index >= 0) {
+            showToast("PASSING " + marked.get(index));
+          }
           setHomeCoordinate();
           updateDroneLocation();
           enableLeftSideButtons();
@@ -297,7 +310,6 @@ public class MapFragment extends Fragment {
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        showNativeToast("v=" + mainActivity().notificationLayout.getVisibility() + " m=" + message);
         mainActivity().showToast(message);
       }
     });
@@ -341,6 +353,9 @@ public class MapFragment extends Fragment {
   @Subscribe
   public void onClearWaypointsClicked(ClearWaypointsClicked clicked) {
     markers.clear();
+
+    marked.clear();
+
     waypointMission.removeAllWaypoints();
   }
 
@@ -417,7 +432,12 @@ public class MapFragment extends Fragment {
       if(isNotNull(error)) {
         missionDetails.setMissionStop();
       }
-      showNativeToast("Execution finished: " + (error == null ? "Success" : error.getDescription()));
+
+      if(isNotNull(writableDBMission)) {
+        int rowId = addMissionToDB(writableDBMission);
+        DrogonApplication.getBus().post(new MissionCompleted(rowId));
+      }
+      showNativeToast("Execution finished: " + (isNull(error) ? "Success" : error.getDescription()));
     }
   };
 
@@ -426,11 +446,8 @@ public class MapFragment extends Fragment {
     public void onResult(DJIError error) {
       if(isNull(error)) {
         startWaypointMission();
-      } else {
-        showNativeToast("error!!!! :( " + error.getDescription());
-        //show toast that's there's an error
       }
-      showNativeToast("Prepare mission: " + (error == null ? "Success" : error.getDescription()));
+      showNativeToast("Prepare mission: " + (isNull(error) ? "Success" : error.getDescription()));
     }
   };
 
@@ -447,11 +464,11 @@ public class MapFragment extends Fragment {
 
       if(isNull(error)) {
         missionDetails.setMissionStart();
-      }
 
-      String status = isNull(error) ? "Success" : error.getDescription();
-      showToast("Mission Started: " + status);
-//      showNativeToast("Start mission: " + (error == null ? "Success" : error.getDescription()));
+        if(isNotNull(homeLatLng))
+          writableDBMission = new WritableDBMission(new Date(), homeLatLng.latitude, homeLatLng.longitude);
+      }
+      showToast("Mission Started: " + (isNull(error) ? "Success" : error.getDescription()));
     }
   };
 
@@ -474,8 +491,28 @@ public class MapFragment extends Fragment {
     }
   };
 
-  private void addMissionToDB(DBMission mission) {
-    mainActivity().database.insertMission(mission);
+  private int addMissionToDB(WritableDBMission mission) {
+    return mainActivity().database.insertMission(mission);
+  }
+
+  private void capture() {
+    DJIBaseProduct product = DrogonApplication.getProductInstance();
+    if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+      DJICamera camera = product.getCamera();
+      if(isNotNull(camera)) {
+        DJICameraSettingsDef.CameraMode cameraMode = DJICameraSettingsDef.CameraMode.ShootPhoto;
+        if(isNotNull(camera)) {
+          DJICameraSettingsDef.CameraShootPhotoMode photoMode = DJICameraSettingsDef.CameraShootPhotoMode.Single;
+          camera.startShootPhoto(photoMode, new DJIBaseComponent.DJICompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+              String msg = isNotNull(djiError) ? djiError.getDescription() : "SUCCESS!";
+              showToast("CAPTURED " + msg);
+            }
+          });
+        }
+      }
+    }
   }
 
   @Override

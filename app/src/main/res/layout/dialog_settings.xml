@@ -59,6 +59,23 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/angle_seek_bar"/>
         </LinearLayout>
-    </LinearLayout>
 
+        <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_vertical">
+            <TextView
+              android:layout_width="100dp"
+              android:layout_height="wrap_content"
+              android:gravity="center_vertical"
+              android:layout_gravity="center_vertical"
+              android:textSize="12dp"
+              android:text="Server Address:"/>
+            <EditText
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:maxLines="2"
+              android:id="@+id/ip_address_edit_text"/>
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>
