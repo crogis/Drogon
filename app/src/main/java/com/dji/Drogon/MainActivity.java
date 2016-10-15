@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.*;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -21,6 +20,7 @@ import android.view.animation.Animation;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -30,8 +30,8 @@ import android.widget.Toast;
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.db.DrogonDatabase;
+import com.dji.Drogon.domain.Dummy;
 import com.dji.Drogon.domain.ReadableDBMission;
-import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.domain.FileDirectory;
 import com.dji.Drogon.domain.MainLayoutDimens;
 import com.dji.Drogon.domain.MissionDetails;
@@ -48,24 +48,39 @@ import com.dji.Drogon.helper.FileHelper;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.maps.android.SphericalUtil;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dji.sdk.AirLink.DJIAirLink;
+import dji.sdk.AirLink.DJILBAirLink;
+import dji.sdk.AirLink.DJISignalInformation;
+import dji.sdk.Battery.DJIBattery;
 import dji.sdk.Battery.DJIBattery.*;
+import dji.sdk.FlightController.DJIFlightController;
+import dji.sdk.FlightController.DJIFlightControllerDataType;
+import dji.sdk.FlightController.DJIFlightControllerDataType.*;
+import dji.sdk.FlightController.DJIFlightControllerDelegate;
 import dji.sdk.Gimbal.DJIGimbal;
 import dji.sdk.Gimbal.DJIGimbal.*;
+import dji.sdk.Products.DJIAircraft;
+import dji.sdk.RemoteController.DJIRemoteController;
+import dji.sdk.RemoteController.DJIRemoteController.*;
 import dji.sdk.base.DJIBaseComponent;
 import dji.sdk.base.DJIBaseProduct;
 import dji.sdk.base.DJIError;
+import dji.sdk.util.DJIParamCapability;
 import dji.sdk.util.DJIParamMinMaxCapability;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
@@ -88,6 +103,10 @@ public class MainActivity extends AppCompatActivity {
 
   @BindView(R.id.toolbar) Toolbar toolbar;
   @BindView(R.id.battery_text_view) TextView batteryTextView;
+  @BindView(R.id.battery_image_view) ImageView batteryImageView;
+  @BindView(R.id.connection_status_text_view) TextView connectionStatusTextView;
+  @BindView(R.id.remote_control_connection_image_view) ImageView remoteControlConnectionImageView;
+  @BindView(R.id.flight_mode_text_view) TextView flightModeTextView;
 
   //todo revert to private after testing
   @BindView(R.id.dropdown_notification_layout) public LinearLayout notificationLayout;
@@ -102,27 +121,106 @@ public class MainActivity extends AppCompatActivity {
   public DrogonDatabase database = new DrogonDatabase(this);
 
   private final String IP_ADDRESS_PREFERENCE = "ip_address";
+  private final String DRONE_ANGLE_PREFERENCE = "drone_angle";
 
   protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
       DJIBaseProduct product = DrogonApplication.getProductInstance();
-//      System.out.println("MAIN ACTIVITY AIRCRAFT CONNECTED " + DrogonApplication.isAircraftConnected());
-      if(isNotNull(product)) {
-        product.getBattery().setBatteryStateUpdateCallback(new DJIBatteryStateUpdateCallback() {
-          @Override
-          public void onResult(DJIBatteryState batteryState) {
-            final String percentage = batteryState.getBatteryEnergyRemainingPercent() + "%";
-            runOnUiThread(new Runnable() {
+      if(isNotNull(product) && DrogonApplication.isAircraftConnected()) {
+        DJIBattery battery = product.getBattery();
+        DJIAirLink airLink = product.getAirLink();
+        DJIRemoteController remoteController = ((DJIAircraft) product).getRemoteController();
+        DJIFlightController flightController = ((DJIAircraft) product).getFlightController();
+
+        if(isNotNull(battery)) {
+          battery.setBatteryStateUpdateCallback(new DJIBatteryStateUpdateCallback() {
+            @Override
+            public void onResult(DJIBatteryState batteryState) {
+              final int percent = batteryState.getBatteryEnergyRemainingPercent();
+              final String percentage = batteryState.getBatteryEnergyRemainingPercent() + "%";
+              runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                  int imageResource = 0;
+                  if(percent > 75) imageResource = R.drawable.battery_100;
+                  else if(percent > 50) imageResource = R.drawable.battery_75;
+                  else if(percent > 25) imageResource = R.drawable.battery_50;
+                  else if(percent > 0) imageResource = R.drawable.battery_25;
+                  else if(percent == 0) imageResource = R.drawable.battery_0;
+
+                  batteryImageView.setImageResource(imageResource);
+                  batteryTextView.setText(percentage);
+                }
+              });
+            }
+          });
+        }
+
+        if(isNotNull(airLink)) {
+          if(airLink.isLBAirLinkSupported()) {
+            airLink.getLBAirLink().setLBAirLinkUpdatedRemoteControllerSignalInformationCallback(new DJILBAirLink.DJILBAirLinkUpdatedRemoteControllerSignalInformationCallback() {
               @Override
-              public void run() {
-                batteryTextView.setText(percentage);
+              public void onResult(ArrayList<DJISignalInformation> infoArr) {
+                int sum = 0;
+                for(DJISignalInformation info: infoArr) {
+                  sum += info.getPercent();
+                }
+                final int aveConnSignal = (sum / infoArr.size());
+
+                runOnUiThread(new Runnable() {
+                  @Override
+                  public void run() {
+                    int imageResource = 0;
+                    if(aveConnSignal > 75) imageResource = R.drawable.connection_100;
+                    else if(aveConnSignal > 50) imageResource = R.drawable.connection_75;
+                    else if(aveConnSignal > 25) imageResource = R.drawable.connection_50;
+                    else if(aveConnSignal > 0) imageResource = R.drawable.connection_25;
+                    else if(aveConnSignal == 0) imageResource = R.drawable.connection_0;
+                    remoteControlConnectionImageView.setImageResource(imageResource);
+                  }
+                });
               }
             });
           }
-        });
+        }
+
+        if(isNotNull(remoteController) && isNotNull(flightController)) {
+          final DJIFlightController _flightController = flightController;
+          runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+              flightModeTextView.setText(_flightController.getCurrentState().getFlightMode().toString());
+            }
+          });
+          remoteController.getHardwareStateUpdateCallback();
+          remoteController.setHardwareStateUpdateCallback(new DJIRemoteController.RCHardwareStateUpdateCallback() {
+            @Override
+            public void onHardwareStateUpdate(final DJIRemoteController controller, final DJIRCHardwareState state) {
+              runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                  String flightSwitchMode = state.flightModeSwitch.mode.name();
+                  String flightMode = _flightController.getCurrentState().getFlightMode().name();
+                  flightModeTextView.setText(flightSwitchMode + "-" + flightMode);
+                }
+              });
+            }
+          });
+        }
 //        DJIRemoteController remoteController = ((DJIAircraft) product).getRemoteController();
 //        remoteController
+      } else {
+        //idk if this actually works
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            batteryImageView.setImageResource(R.drawable.battery_0);
+            remoteControlConnectionImageView.setImageResource(R.drawable.connection_0);
+            batteryTextView.setText("N/A");
+            flightModeTextView.setText("N/A");
+          }
+        });
       }
 
       captureImageBtn.setEnabled(isNotNull(product));
@@ -151,75 +249,36 @@ public class MainActivity extends AppCompatActivity {
 
     FileHelper.initializeWaypointDirectory();
 
+    LatLng main = new LatLng(22.537106129131445,113.95363166709372);
+
+    List<LatLng> list = Dummy.getPoints();
+
+    List<LatLng> compare = Dummy.comparePoints();
+
+    for(LatLng l: list) {
+//      System.out.println("DISTANCE " + SphericalUtil.computeDistanceBetween(l, main));
+      for(LatLng l1: compare) {
+        if(SphericalUtil.computeDistanceBetween(l, l1) < 0.3) {
+          System.out.println("NEAR!!! " + compare.indexOf(l1) + " " + l.toString());
+        }
+      }
+    }
 //    List<WritableDBMission> missions = database.getMissions();
 //    System.out.println("READING DATABASE " + missions.size());
 //    for(int i = 0; i < missions.size(); i++) {
 //      System.out.println(missions.get(i).getMissionId());
 //    }
 
-//    Thread thread = new Thread(new Runnable() {
-//
-//      @Override
-//      public void run() {
-//        try  {
-//          //Your code goes here
-//          SmbFile[] domains = null;
-//          try {
-//            try {
-////              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", username, password);
-//              SmbFile file = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/");
-//              System.out.println("SD CARD PATH " + Environment.getExternalStorageDirectory().getPath());
-////              File imageFile =new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera/", "20160924_151141.jpg");
-//              File imageFile =new File("/sdcard/DCIM/Camera/", "20160924_151141.jpg");
-//              System.out.println("does this exist " + imageFile.exists());
-//              FileInputStream fis= new FileInputStream(imageFile);
-////              String newDir = file.getPath() + "temp/";
-////
-////              SmbFile newFileDir = new SmbFile(newDir);
-////              newFileDir.mkdir();
-//
-////              NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, null, null);
-//              SmbFile f = new SmbFile("smb://192.168.22.5/Users/Regine/Documents/Data/20160924_151141.jpg");//, auth);
-//              if(!f.exists()) f.createNewFile();
-//              System.out.println("CREATINGGGG " + f.exists());
-//              SmbFileOutputStream os = new SmbFileOutputStream(f, false);
-//              byte buffer[] = new byte[1024];
-//              int read;
-//              while((read = fis.read(buffer)) != -1){
-//                System.out.println("WRITING......");
-//                os.write(buffer, 0, read);
-//              }
-//              fis.close();
-//              os.close();
-//            } catch (MalformedURLException e){
-//              e.printStackTrace();
-//            }
-//          } catch (SmbException e1) {
-//            e1.printStackTrace();
-//          }
-//        } catch (Exception e) {
-//          e.printStackTrace();
-//        }
-//      }
-//    });
-//    thread.start();
 //    simulateCSV();
-
-    simulateCSV();
   }
 
   @Subscribe
   public void onMissionCompleted(MissionCompleted missionCompleted) {
     int rowId = missionCompleted.getRowId();
     List<ReadableDBMission> missions = database.getMissions();
-    final ReadableDBMission mission = missions.get(rowId);
+    final ReadableDBMission mission = missions.get(rowId - 1);
     if(isNotNull(mission)) {
-      runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-          Toast.makeText(getApplicationContext(), "WRITING MISSION " + mission.getDateTime().toString(), Toast.LENGTH_SHORT).show();
-        }
-      });
+      showNativeToast("WRITING MISSION " + mission.getDateTime().toString());
     }
   }
 
@@ -407,29 +466,13 @@ public class MainActivity extends AppCompatActivity {
     builder.setView(v);
     final AlertDialog dialog = builder.create();
     ImageButton btn = (ImageButton)v.findViewById(R.id.close_btn);
-    SeekBar sb = (SeekBar) v.findViewById(R.id.angle_seek_bar);
+    SeekBar seekBar = (SeekBar) v.findViewById(R.id.angle_seek_bar);
     final EditText editText = (EditText) v.findViewById(R.id.ip_address_edit_text);
 
     btn.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        String ipAddress = editText.getText().toString().trim();
-        if(ipAddress.length() > 0) {
-          try {
-            URL u = new URL(ipAddress);
-            String protocol  = u.getProtocol();
-            String host = u.getHost();
-            String path = u.getPath();
-            if(path.charAt(path.length() - 1) == '/') {
-              path = path.substring(0, path.length() - 1);
-              u = new URL(protocol, host, path);
-            }
-
-            putPreferenceString(IP_ADDRESS_PREFERENCE, u.toString());
-          } catch (MalformedURLException e) {
-            showToast("Invalid URL");
-          }
-        } else removePreference(IP_ADDRESS_PREFERENCE);
+        validateServerAddress(editText.getText().toString().trim());
         dialog.dismiss();
       }
     });
@@ -438,44 +481,13 @@ public class MainActivity extends AppCompatActivity {
     if(ipAddress.length() > 0)
       editText.setText(ipAddress);
 
-    final DJIGimbalAngleRotation mYawRotation = new DJIGimbalAngleRotation(false, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
-    final DJIGimbalAngleRotation mRollRotation = new DJIGimbal.DJIGimbalAngleRotation(false, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
-
-    sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+    int prefAngle = getPreferenceInt(DRONE_ANGLE_PREFERENCE);
+    int angle = prefAngle >= 0 ? prefAngle : 100;
+    seekBar.setProgress(angle);
+    seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       @Override
       public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-        System.out.println("SEEKBAR " + i);
-
-        DJIGimbal gimbal = DrogonApplication.getGimbalInstance();
-
-        if(isNotNull(gimbal)) {
-          DJIGimbalAngleRotation mPitchRotation = new DJIGimbalAngleRotation(true, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
-          DJIParamMinMaxCapability minMaxCapability = ((DJIParamMinMaxCapability)gimbal.gimbalCapability.get(DJIGimbal.DJIGimbalCapabilityKey.AdjustPitch));
-          Number min = minMaxCapability.getMin().floatValue();
-          Number max = minMaxCapability.getMax().floatValue();
-//          showToast("MIN " + min + " MAX " + max);
-//-90 min, 30 max
-          mPitchRotation.direction = DJIGimbal.DJIGimbalRotateDirection.Clockwise;
-          mPitchRotation.angle = min.floatValue();
-
-          gimbal.rotateGimbalByAngle(DJIGimbalRotateAngleMode.AbsoluteAngle, mPitchRotation, null, null,
-            new DJIBaseComponent.DJICompletionCallback() {
-              @Override
-              public void onResult(final DJIError djiError) {
-                runOnUiThread(new Runnable() {
-                  @Override
-                  public void run() {
-                    if(isNotNull(djiError)) {
-                      showToast("ERROR " + djiError.getDescription());
-                    } else showToast("SUCCESS!!");
-                  }
-                });
-              }
-            }
-          );
-//          gimbal.rotateGimbalByAngle();
-        }
-
+        changeGimbal(i);
       }
 
       @Override
@@ -484,6 +496,73 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekBar) {}
     });
     dialog.show();
+  }
+
+  private void validateServerAddress(String ipAddress) {
+    if(ipAddress.length() > 0) {
+      try {
+        URL u = new URL(ipAddress);
+        String protocol  = u.getProtocol();
+        String host = u.getHost();
+        String path = u.getPath();
+        if(path.charAt(path.length() - 1) == '/') {
+          path = path.substring(0, path.length() - 1);
+          u = new URL(protocol, host, path);
+        }
+
+        putPreferenceString(IP_ADDRESS_PREFERENCE, u.toString());
+      } catch (MalformedURLException e) {
+        showToast("Invalid URL");
+      }
+    } else removePreference(IP_ADDRESS_PREFERENCE);
+  }
+
+  private void changeGimbal(final int progress) {
+    DJIGimbal gimbal = DrogonApplication.getGimbalInstance();
+    if(isNotNull(gimbal)) {
+      DJIParamCapability capability = gimbal.gimbalCapability.get(DJIGimbal.DJIGimbalCapabilityKey.PitchRangeExtension);
+      boolean ifPossible = false;
+      if(isNotNull(capability)) {
+        ifPossible = capability.isSuppported();
+      }
+
+      if (ifPossible) {
+        gimbal.setPitchRangeExtensionEnabled(true, new DJIBaseComponent.DJICompletionCallback() {
+          @Override
+          public void onResult(DJIError djiError) {}}
+        );
+      }
+
+      gimbal.setGimbalWorkMode(DJIGimbal.DJIGimbalWorkMode.YawFollowMode, new DJIBaseComponent.DJICompletionCallback() {
+        @Override
+        public void onResult(DJIError error) {}
+      });
+      DJIGimbalAngleRotation mPitchRotation =
+              new DJIGimbalAngleRotation(true, 0, DJIGimbal.DJIGimbalRotateDirection.Clockwise);
+      DJIParamMinMaxCapability minMaxCapability =
+              ((DJIParamMinMaxCapability)gimbal.gimbalCapability.get(DJIGimbal.DJIGimbalCapabilityKey.AdjustPitch));
+      float min = minMaxCapability.getMin().floatValue();
+      float max = minMaxCapability.getMax().floatValue();
+      //-90 min, 30 max
+
+      float multiplier = Math.abs(max) + Math.abs(min);
+      float percent = progress / 100.00f;
+      final float value = (percent * multiplier) + min;
+
+      mPitchRotation.direction = DJIGimbal.DJIGimbalRotateDirection.Clockwise;
+      mPitchRotation.angle = value;
+
+      gimbal.rotateGimbalByAngle(DJIGimbalRotateAngleMode.AbsoluteAngle, mPitchRotation, null, null,
+        new DJIBaseComponent.DJICompletionCallback() {
+          @Override
+          public void onResult(final DJIError djiError) {
+            if(isNull(djiError)) {
+              putPreferenceInt(DRONE_ANGLE_PREFERENCE, progress);
+            }
+          }
+        }
+      );
+    }
   }
 
   public void showToast(final String message) {
@@ -506,7 +585,7 @@ public class MainActivity extends AppCompatActivity {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        Toast.makeText(c, message, Toast.LENGTH_LONG).show();
+        Toast.makeText(c, message, Toast.LENGTH_SHORT).show();
       }
     });
   }
@@ -554,9 +633,19 @@ public class MainActivity extends AppCompatActivity {
     preferences.edit().putString(key, value).apply();
   }
 
+  private void putPreferenceInt(String key, int value) {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    preferences.edit().putInt(key, value).commit();
+  }
+
   private String getPreferenceString(String key) {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     return preferences.getString(key, "");
+  }
+
+  private int getPreferenceInt(String key) {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return preferences.getInt(key, -1);
   }
 
   private void removePreference(String key) {

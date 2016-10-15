@@ -41,6 +41,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.SphericalUtil;
 import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class MapFragment extends Fragment {
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
 
-  private float missionSpeed = 10.0f;//1.0f; // 1m/s
+  private float missionSpeed = 1.0f;//10.0f;//1.0f; // 1m/s
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
@@ -211,6 +212,7 @@ public class MapFragment extends Fragment {
     public void missionProgressStatus(DJIMissionProgressStatus status) {}
   };
 
+  double SameThreshold = 0.1;
   //initializes flight controller and mission manager
   private void initializeDJI() {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
@@ -237,9 +239,14 @@ public class MapFragment extends Fragment {
           DJILocationCoordinate3D aircraftLocation = state.getAircraftLocation();
           droneLocationLat = aircraftLocation.getLatitude();
           droneLocationLng = aircraftLocation.getLongitude();
-          int index = marked.indexOf(new LatLng(droneLocationLat, droneLocationLng));
-          if(index >= 0) {
-            showToast("PASSING " + marked.get(index));
+
+          LatLng curr = new LatLng(droneLocationLat, droneLocationLng);
+          System.out.println("curr_loc1" + curr.toString());
+
+          for(LatLng l: marked) {
+            if(SphericalUtil.computeDistanceBetween(l, curr) < SameThreshold) {
+              showToast("PASSING " + marked.indexOf(l));
+            }
           }
           setHomeCoordinate();
           updateDroneLocation();
@@ -336,6 +343,15 @@ public class MapFragment extends Fragment {
   @Subscribe
   public void onTakeOffClicked(TakeOffClicked clicked) {
     waypointMission.removeAllWaypoints();
+
+    String listString = "";
+    for (LatLng s : marked)
+    {
+      listString += s.toString() + "\n";
+    }
+
+    System.out.println("MARKERS " + listString);
+
     for(int i = 0; i < markers.size(); i++) {
       LatLng point = markers.getPosition(i);
       DJIWaypoint waypoint = new DJIWaypoint(point.latitude, point.longitude, chosenAltitude.getAltitude());
@@ -434,8 +450,13 @@ public class MapFragment extends Fragment {
       }
 
       if(isNotNull(writableDBMission)) {
-        int rowId = addMissionToDB(writableDBMission);
-        DrogonApplication.getBus().post(new MissionCompleted(rowId));
+        final int rowId = addMissionToDB(writableDBMission);
+        getActivity().runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            DrogonApplication.getBus().post(new MissionCompleted(rowId));
+          }
+        });
       }
       showNativeToast("Execution finished: " + (isNull(error) ? "Success" : error.getDescription()));
     }

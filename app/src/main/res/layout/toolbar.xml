@@ -5,12 +5,14 @@
       android:id="@+id/toolbar"
       android:background="#80000000">
         <LinearLayout style="@style/ToolbarStartLayout">
-            <TextView style="@style/ConnectionTextView"
-              android:text="Connection Lost"/>
+            <TextView style="@style/ToolbarTextView"
+                      android:id="@+id/connection_status_text_view"
+                      android:text="Disconnected"/>
         </LinearLayout>
         <LinearLayout style="@style/ToolbarEndLayout">
             <ImageView style="@style/ToolbarImageView"
-              android:src="@drawable/battery"/>
+                       android:id="@+id/battery_image_view"
+                       android:src="@drawable/battery_100"/>
             <TextView style="@style/ToolbarTextView"
                       android:id="@+id/battery_text_view"
                       android:text="N/A"/>
@@ -20,25 +22,29 @@
             <ImageView style="@style/ToolbarImageView"
               android:src="@drawable/hd"/>
             <ImageView style="@style/ToolbarImageViewConnection"
-              android:src="@drawable/connection"/>
+                       android:id="@+id/hd_connection_image_view"
+                       android:src="@drawable/connection_0"/>
         </LinearLayout>
         <LinearLayout style="@style/ToolbarEndLayout">
             <ImageView style="@style/ToolbarImageView"
               android:src="@drawable/remote_control"/>
             <ImageView style="@style/ToolbarImageViewConnection"
-              android:src="@drawable/connection"/>
+                       android:id="@+id/remote_control_connection_image_view"
+                       android:src="@drawable/connection_0"/>
         </LinearLayout>
         <LinearLayout style="@style/ToolbarEndLayout">
             <ImageView style="@style/ToolbarImageView"
               android:src="@drawable/satellite"/>
             <ImageView style="@style/ToolbarImageViewConnection"
-              android:src="@drawable/connection"/>
+                       android:id="@+id/satellite_connection_image_view"
+                       android:src="@drawable/connection_0"/>
         </LinearLayout>
         <LinearLayout style="@style/ToolbarEndLayout">
             <ImageView style="@style/ToolbarImageView"
               android:src="@drawable/drone"/>
             <TextView style="@style/ToolbarTextView"
-              android:text="OTPI"/>
+                      android:id="@+id/flight_mode_text_view"
+                      android:text="N/A"/>
         </LinearLayout>
     </android.support.v7.widget.Toolbar>
 

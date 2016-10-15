@@ -78,8 +78,8 @@ public class DrogonApplication extends Application {
       Log.e("TAG", djiError.toString());
     }
 
-    //Listens to the connected product changing, including two parts, component changing or product connection changing.
-    //checks the product connection status and invoke the notifyStatusChange to notify status changes
+    //Listens to the connected product changing, including two parts, component changing or product connection_75 changing.
+    //checks the product connection_75 status and invoke the notifyStatusChange to notify status changes
     @Override
     public void onProductChanged(DJIBaseProduct oldProduct, DJIBaseProduct newProduct) {
       mProduct = newProduct;

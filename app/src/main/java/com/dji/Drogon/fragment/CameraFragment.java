@@ -216,6 +216,12 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     }
   }
 
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    getContext().unregisterReceiver(onConnectionChangeReceiver);
+  }
+
   public void showToast(String msg) {
     Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
   }
