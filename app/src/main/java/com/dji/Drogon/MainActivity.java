@@ -68,10 +68,11 @@ import dji.sdk.AirLink.DJILBAirLink;
 import dji.sdk.AirLink.DJISignalInformation;
 import dji.sdk.Battery.DJIBattery;
 import dji.sdk.Battery.DJIBattery.*;
+import dji.sdk.Camera.DJICameraSettingsDef;
 import dji.sdk.FlightController.DJIFlightController;
-import dji.sdk.FlightController.DJIFlightControllerDataType;
 import dji.sdk.FlightController.DJIFlightControllerDataType.*;
 import dji.sdk.FlightController.DJIFlightControllerDelegate;
+import dji.sdk.FlightController.DJINoFlyZoneModel;
 import dji.sdk.Gimbal.DJIGimbal;
 import dji.sdk.Gimbal.DJIGimbal.*;
 import dji.sdk.Products.DJIAircraft;
@@ -107,6 +108,9 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.connection_status_text_view) TextView connectionStatusTextView;
   @BindView(R.id.remote_control_connection_image_view) ImageView remoteControlConnectionImageView;
   @BindView(R.id.flight_mode_text_view) TextView flightModeTextView;
+  @BindView(R.id.satellite_connection_image_view) ImageView satelliteConnectionImageView;
+  @BindView(R.id.satellite_count_text_view) TextView satelliteCountTextView;
+  @BindView(R.id.hd_connection_image_view) ImageView hdConnectionImageView;
 
   //todo revert to private after testing
   @BindView(R.id.dropdown_notification_layout) public LinearLayout notificationLayout;
@@ -159,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(isNotNull(airLink)) {
           if(airLink.isLBAirLinkSupported()) {
+            hdConnectionImageView.setImageResource(R.drawable.connection_100);
             airLink.getLBAirLink().setLBAirLinkUpdatedRemoteControllerSignalInformationCallback(new DJILBAirLink.DJILBAirLinkUpdatedRemoteControllerSignalInformationCallback() {
               @Override
               public void onResult(ArrayList<DJISignalInformation> infoArr) {
@@ -185,34 +190,36 @@ public class MainActivity extends AppCompatActivity {
           }
         }
 
+
         if(isNotNull(remoteController) && isNotNull(flightController)) {
-          final DJIFlightController _flightController = flightController;
-          remoteController.getHardwareStateUpdateCallback();
-          remoteController.setHardwareStateUpdateCallback(new DJIRemoteController.RCHardwareStateUpdateCallback() {
+//          initializeFlightControllerDetails(flightController, null);
+          setRemoteFlightControllerCallbacks(remoteController, flightController);
+
+          showNativeToast("status " + flightController.getCurrentState().getNoFlyStatus().toString());
+          flightController.getCurrentState().
+          flightController.setReceivedNoFlyZoneCallback(new DJIFlightControllerDelegate.ReceivedNoFlyZoneFromFlightControllerCallback() {
             @Override
-            public void onHardwareStateUpdate(final DJIRemoteController controller, final DJIRCHardwareState state) {
+            public void onReceivingNoFlyZone(final DJINoFlyZoneModel.DJINoFlyZoneState djiNoFlyZoneState) {
               runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                  String flightSwitchMode = state.flightModeSwitch.mode.name();
-                  String flightMode = _flightController.getCurrentState().getFlightMode().name();
-                  flightModeTextView.setText(flightSwitchMode + "-" + flightMode);
+                  connectionStatusTextView.setText(djiNoFlyZoneState.toString());
                 }
               });
+              showNativeToast("FLY ZONE " + djiNoFlyZoneState.toString());
             }
           });
         }
-//        DJIRemoteController remoteController = ((DJIAircraft) product).getRemoteController();
-//        remoteController
       } else {
-        //idk if this actually works
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
             batteryImageView.setImageResource(R.drawable.battery_0);
             remoteControlConnectionImageView.setImageResource(R.drawable.connection_0);
-            batteryTextView.setText("N/A");
-            flightModeTextView.setText("N/A");
+            satelliteConnectionImageView.setImageResource(R.drawable.connection_0);
+            hdConnectionImageView.setImageResource(R.drawable.connection_0);
+            batteryTextView.setText(R.string.not_applicable);
+            flightModeTextView.setText(R.string.not_applicable);
           }
         });
       }
@@ -220,6 +227,47 @@ public class MainActivity extends AppCompatActivity {
       captureImageBtn.setEnabled(isNotNull(product));
     }
   };
+
+
+  private void setRemoteFlightControllerCallbacks(DJIRemoteController remoteController, final DJIFlightController flightController) {
+    remoteController.setHardwareStateUpdateCallback(new DJIRemoteController.RCHardwareStateUpdateCallback() {
+      @Override
+      public void onHardwareStateUpdate(final DJIRemoteController controller, final DJIRCHardwareState state) {
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            String flightSwitchMode = state.flightModeSwitch.mode.name();
+            initializeFlightControllerDetails(flightController, flightSwitchMode);
+          }
+        });
+      }
+    });
+  }
+
+  private void initializeFlightControllerDetails(DJIFlightController flightController, String flightSwitchMode) {
+    DJIFlightControllerCurrentState _currentState = flightController.getCurrentState();
+    double satelliteCount = _currentState.getSatelliteCount();
+    String flightModeName = _currentState.getFlightMode().name();
+
+    //~12 according to forums
+    double maxSatelliteCount = 12.00;
+    double satellitePercentage = (satelliteCount / maxSatelliteCount) * 100;
+
+    int imageResource = 0;
+    if(satellitePercentage > 75) imageResource = R.drawable.connection_100;
+    else if(satellitePercentage > 50) imageResource = R.drawable.connection_75;
+    else if(satellitePercentage > 25) imageResource = R.drawable.connection_50;
+    else if(satellitePercentage > 0) imageResource = R.drawable.connection_25;
+    else if(satellitePercentage == 0) imageResource = R.drawable.connection_0;
+
+    satelliteCountTextView.setText(String.valueOf((int)satelliteCount));
+
+    satelliteCountTextView.setText(String.valueOf((int)satelliteCount));
+    satelliteConnectionImageView.setImageResource(imageResource);
+    String flightMode = flightModeName;
+    if(isNotNull(flightSwitchMode)) flightMode = flightSwitchMode + "-" + flightMode;
+    flightModeTextView.setText(flightMode);
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
