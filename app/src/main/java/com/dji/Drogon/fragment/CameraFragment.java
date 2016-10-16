@@ -157,7 +157,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   protected void onProductChange() {
     initPreviewer();
   }
-  String test = "heyo";
+  String test = "test";
 
   private void initPreviewer() {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
@@ -172,7 +172,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
       if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
         DJICamera camera = product.getCamera();
         if(isNotNull(camera)) {
-          test = "heyo processed";
+          test = "processed";
           camera.setCameraMode(CameraMode.ShootPhoto, new DJIBaseComponent.DJICompletionCallback() {
             @Override
             public void onResult(DJIError error) {

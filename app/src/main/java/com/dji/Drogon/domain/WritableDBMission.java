@@ -4,7 +4,8 @@ import java.util.Date;
 
 public class WritableDBMission {
 
-  private int flightDuration = 0, numPicsTaken = 0;
+  private long flightDuration = 0;
+  private int numPicsTaken = 0;
   private Date dateTime;
   private double homeLat, homeLng;
 
@@ -22,19 +23,19 @@ public class WritableDBMission {
     this.homeLng = homeLng;
   }
 
-  public void setFlightDuration(int flightDuration) {
+  public void setFlightDuration(long flightDuration) {
     this.flightDuration = flightDuration;
   }
 
-  public void setNumPicsTaken(int numPicsTaken) {
-    this.numPicsTaken = numPicsTaken;
+  public void addNumPicsTaken() {
+    this.numPicsTaken += 1;
   }
 
   public Date getDateTime() {
     return dateTime;
   }
 
-  public int getFlightDuration() {
+  public long getFlightDuration() {
     return flightDuration;
   }
 

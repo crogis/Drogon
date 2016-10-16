@@ -1,5 +1,6 @@
 package com.dji.Drogon;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,7 +8,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -17,11 +20,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -30,12 +36,13 @@ import android.widget.Toast;
 import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.db.DrogonDatabase;
-import com.dji.Drogon.domain.Dummy;
+import com.dji.Drogon.domain.Altitude;
 import com.dji.Drogon.domain.ReadableDBMission;
 import com.dji.Drogon.domain.FileDirectory;
 import com.dji.Drogon.domain.MainLayoutDimens;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
+import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.event.CaptureImageClicked;
 import com.dji.Drogon.event.ClearWaypointsClicked;
 import com.dji.Drogon.event.FragmentChange;
@@ -48,8 +55,6 @@ import com.dji.Drogon.helper.FileHelper;
 import com.dji.Drogon.views.CustomLayoutParams;
 import com.dji.Drogon.fragment.CameraFragment;
 import com.dji.Drogon.fragment.MapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.maps.android.SphericalUtil;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
@@ -63,6 +68,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.Optional;
 import dji.sdk.AirLink.DJIAirLink;
 import dji.sdk.AirLink.DJILBAirLink;
 import dji.sdk.AirLink.DJISignalInformation;
@@ -112,8 +118,7 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.satellite_count_text_view) TextView satelliteCountTextView;
   @BindView(R.id.hd_connection_image_view) ImageView hdConnectionImageView;
 
-  //todo revert to private after testing
-  @BindView(R.id.dropdown_notification_layout) public LinearLayout notificationLayout;
+  @BindView(R.id.dropdown_notification_layout) LinearLayout notificationLayout;
   @BindView(R.id.notification_text_view) TextView notificationTextView;
 
   Boolean isMapFragmentMain = true;
@@ -124,8 +129,9 @@ public class MainActivity extends AppCompatActivity {
 
   public DrogonDatabase database = new DrogonDatabase(this);
 
-  private final String IP_ADDRESS_PREFERENCE = "ip_address";
+  private final String ALTITUDE_PREFERENCE = "altitude";
   private final String DRONE_ANGLE_PREFERENCE = "drone_angle";
+  private final String IP_ADDRESS_PREFERENCE = "ip_address";
 
   protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
     @Override
@@ -195,8 +201,8 @@ public class MainActivity extends AppCompatActivity {
 //          initializeFlightControllerDetails(flightController, null);
           setRemoteFlightControllerCallbacks(remoteController, flightController);
 
-          showNativeToast("status " + flightController.getCurrentState().getNoFlyStatus().toString());
-          flightController.getCurrentState().
+          String gps = flightController.getCurrentState().getGpsSignalStatus().name();
+          showNativeToast("status " + flightController.getCurrentState().getNoFlyStatus().toString() + " " + gps);
           flightController.setReceivedNoFlyZoneCallback(new DJIFlightControllerDelegate.ReceivedNoFlyZoneFromFlightControllerCallback() {
             @Override
             public void onReceivingNoFlyZone(final DJINoFlyZoneModel.DJINoFlyZoneState djiNoFlyZoneState) {
@@ -210,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
             }
           });
         }
+        connectionStatusTextView.setText(R.string.connected);
       } else {
         runOnUiThread(new Runnable() {
           @Override
@@ -220,6 +227,7 @@ public class MainActivity extends AppCompatActivity {
             hdConnectionImageView.setImageResource(R.drawable.connection_0);
             batteryTextView.setText(R.string.not_applicable);
             flightModeTextView.setText(R.string.not_applicable);
+            connectionStatusTextView.setText(R.string.disconnected);
           }
         });
       }
@@ -291,20 +299,9 @@ public class MainActivity extends AppCompatActivity {
 
     FileHelper.initializeWaypointDirectory();
 
-    LatLng main = new LatLng(22.537106129131445,113.95363166709372);
+//    database.insertMission(new WritableDBMission(new Date(), 14.000, 121.000));
+//    System.out.println("MISSIONZ size " + database.getMissions().size());
 
-    List<LatLng> list = Dummy.getPoints();
-
-    List<LatLng> compare = Dummy.comparePoints();
-
-    for(LatLng l: list) {
-//      System.out.println("DISTANCE " + SphericalUtil.computeDistanceBetween(l, main));
-      for(LatLng l1: compare) {
-        if(SphericalUtil.computeDistanceBetween(l, l1) < 0.3) {
-          System.out.println("NEAR!!! " + compare.indexOf(l1) + " " + l.toString());
-        }
-      }
-    }
 //    List<WritableDBMission> missions = database.getMissions();
 //    System.out.println("READING DATABASE " + missions.size());
 //    for(int i = 0; i < missions.size(); i++) {
@@ -395,6 +392,102 @@ public class MainActivity extends AppCompatActivity {
       thread.start();
     }
   }
+
+  class DirFile {
+    private File csvFile;
+    private String dirName;
+    private ArrayList<File> imgFiles = new ArrayList<>();
+    public DirFile(File csvFile, String dirName) {
+      this.csvFile = csvFile;
+      this.dirName = dirName;
+    }
+
+    public void addImageFile(File imgFile) {
+      imgFiles.add(imgFile);
+    }
+
+    public ArrayList<File> getImageFiles() {
+      return imgFiles;
+    }
+
+    public File getCsvFile() {
+      return csvFile;
+    }
+
+    public String getDirName() {
+      return dirName;
+    }
+  }
+
+  private void sendFilesToServer(final ArrayList<DirFile> dfs) {
+    final String ipAddress = getPreferenceString(IP_ADDRESS_PREFERENCE).trim();
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try  {
+          try {
+            try {
+              URL u = new URL(ipAddress);
+              final String hostPath = u.getHost() + u.getPath();
+
+              showNotification("Sending files to: " + hostPath);
+
+              for(DirFile df: dfs) {
+                FileInputStream fis= new FileInputStream(df.getCsvFile());
+
+                String ipAddressPath = "smb://" + hostPath + "/" + df.getDirName();
+
+                SmbFile dir = new SmbFile(ipAddressPath);
+                if(!dir.exists()) dir.mkdir();
+
+                SmbFile f = new SmbFile(ipAddressPath + "/" + df.getCsvFile().getName());
+                if(!f.exists()) f.createNewFile();
+                SmbFileOutputStream os = new SmbFileOutputStream(f, false);
+                byte buffer[] = new byte[1024];
+                int read;
+                while((read = fis.read(buffer)) != -1){
+                  os.write(buffer, 0, read);
+                }
+                fis.close();
+                os.close();
+
+                //todo fix this
+                for(File imgFile: df.getImageFiles()) {
+                  FileInputStream fis1= new FileInputStream(imgFile);
+                  SmbFile f1 = new SmbFile(ipAddressPath + "/" + imgFile.getName());
+                  if(!f1.exists()) f1.createNewFile();
+                  SmbFileOutputStream os1 = new SmbFileOutputStream(f1, false);
+                  byte buffer1[] = new byte[1024];
+                  int read1;
+                  while((read1 = fis1.read(buffer1)) != -1){
+                    os1.write(buffer1, 0, read1);
+                  }
+                  fis1.close();
+                  os1.close();
+                }
+              }
+
+              hideNotification();
+
+            } catch (final MalformedURLException e){
+              showSendingErrorToast(e.getMessage());
+              e.printStackTrace();
+            }
+          } catch (final SmbException e) {
+            showSendingErrorToast(e.getMessage());
+            e.printStackTrace();
+          }
+        } catch (Exception e) {
+          showSendingErrorToast(e.getMessage());
+          e.printStackTrace();
+        }
+      }
+    });
+    if(ipAddress.length() > 0) {
+      thread.start();
+    }
+  }
+
 
   private void showSendingErrorToast(final String msg) {
     hideNotification();
@@ -499,23 +592,74 @@ public class MainActivity extends AppCompatActivity {
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     // Get the layout inflater
     LayoutInflater inflater = getLayoutInflater();
-    View v = inflater.inflate(R.layout.dialog_settings, null);
+    View view = inflater.inflate(R.layout.dialog_settings, null);
+
     // Inflate and set the layout for the dialog
     // Pass null as the parent view because its going in the
     // dialog layout
-
     builder.setCancelable(false);
-    builder.setView(v);
-    final AlertDialog dialog = builder.create();
-    ImageButton btn = (ImageButton)v.findViewById(R.id.close_btn);
-    SeekBar seekBar = (SeekBar) v.findViewById(R.id.angle_seek_bar);
-    final EditText editText = (EditText) v.findViewById(R.id.ip_address_edit_text);
+    builder.setView(view);
 
-    btn.setOnClickListener(new View.OnClickListener() {
+    final AlertDialog dialog = builder.create();
+    ImageButton closeButton = ButterKnife.findById(view, R.id.close_btn);//(ImageButton)v.findViewById(R.id.close_btn);
+    SeekBar seekBar = ButterKnife.findById(view, R.id.angle_seek_bar);//(SeekBar) v.findViewById(R.id.angle_seek_bar);
+    RadioGroup altitudeRadioGroup = ButterKnife.findById(view, R.id.altitude_radio_group);//(RadioGroup) v.findViewById(R.id.altitude_radio_group);
+    final EditText editText = ButterKnife.findById(view, R.id.ip_address_edit_text);
+    Button exportButton = ButterKnife.findById(view, R.id.export_button);
+
+    exportButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        validateServerAddress(editText.getText().toString().trim());
+
+        List<ReadableDBMission> missions = database.getMissions();
+        ArrayList<DirFile> dfs = new ArrayList<>();
+        for(ReadableDBMission mission: missions) {
+          FileDirectory fd = new FileDirectory(mission.getDateTime());
+          String parent = fd.getSubDirectoryPath();
+          System.out.println("SUB DIRECTORY PATH " + parent);
+          FileHelper.createWaypointSubDirectory(parent);
+
+          File[] files = new File(parent).listFiles();
+          System.out.println("NUM FILES " + files.length);
+
+          String csvContent = CSVWriter.generateFromDBMission(mission);
+          System.out.println("CONTENT " + csvContent);
+
+          String csvFilePath = fd.getCSVFilePath();
+          System.out.println("CSV FILE PATH " + csvFilePath);
+          File csvFile = new File(csvFilePath);
+          FileHelper.writeToFile(csvFile, csvContent);
+
+          DirFile df = new DirFile(csvFile, fd.getBaseFileName());
+          for(File f: files) {
+            if(f.getName().contains(".jpg")) {
+              df.addImageFile(f);
+            }
+          }
+          dfs.add(df);
+        }
+        sendFilesToServer(dfs);
+//        sendToServer(csvFile, fd.getBaseFileName());
+
+      }
+    });
+
+    closeButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
         validateServerAddress(editText.getText().toString().trim());
         dialog.dismiss();
+      }
+    });
+
+    int altitudePreference = getPreferenceInt(ALTITUDE_PREFERENCE);
+    if(altitudePreference > -1) altitudeRadioGroup.check(altitudePreference);
+
+    altitudeRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(RadioGroup radioGroup, int checkedId) {
+        putPreferenceInt(ALTITUDE_PREFERENCE, checkedId);
       }
     });
 
@@ -643,7 +787,6 @@ public class MainActivity extends AppCompatActivity {
         }
       }
     });
-
   }
 
   public void hideNotification() {
@@ -670,6 +813,19 @@ public class MainActivity extends AppCompatActivity {
     getSupportFragmentManager().beginTransaction().add(id, f).commit();
   }
 
+  public Altitude getChosenAltitude() {
+    int altitudeId = getPreferenceInt(ALTITUDE_PREFERENCE);
+    switch(altitudeId) {
+      case R.id.altitude_10:
+        return Altitude.LEVEL_10;
+      case R.id.altitude_15:
+        return Altitude.LEVEL_15;
+      case R.id.altitude_20:
+        return Altitude.LEVEL_20;
+      default:
+        return Altitude.LEVEL_10;
+    }
+  }
   private void putPreferenceString(String key, String value) {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     preferences.edit().putString(key, value).apply();

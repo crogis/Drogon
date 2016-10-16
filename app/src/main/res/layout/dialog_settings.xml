@@ -32,15 +32,18 @@
                 android:gravity="center_vertical"
                 android:layout_gravity="center_vertical"
                 android:text="Altitude"/>
-            <Spinner
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="20dp"
-                android:textSize="12dp"
-                android:gravity="center_vertical"
-                android:layout_gravity="center_vertical"
-                android:entries="@array/altitude_items">
-            </Spinner>
+            <RadioGroup style="@style/WrapContent.Horizontal"
+                        android:id="@+id/altitude_radio_group">
+                <RadioButton style="@style/AltitudeRadioButton"
+                             android:id="@+id/altitude_10"
+                             android:text="@string/altitude_10"/>
+                <RadioButton style="@style/AltitudeRadioButton"
+                             android:id="@+id/altitude_15"
+                             android:text="@string/altitude_15"/>
+                <RadioButton style="@style/AltitudeRadioButton"
+                             android:id="@+id/altitude_20"
+                             android:text="@string/altitude_20"/>
+            </RadioGroup>
         </LinearLayout>
 
         <LinearLayout
@@ -77,5 +80,16 @@
               android:maxLines="2"
               android:id="@+id/ip_address_edit_text"/>
         </LinearLayout>
+
+        <Button
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:background="@drawable/round_btn"
+          android:gravity="center|center_horizontal"
+          android:layout_gravity="end"
+          android:textColor="@android:color/white"
+          android:layout_marginTop="10dp"
+          android:id="@+id/export_button"
+          android:text="Export"/>
     </LinearLayout>
 </LinearLayout>

@@ -230,8 +230,6 @@ public class MapFragment extends Fragment {
       missionManager = null;
     }
 
-//    showNativeToast("Init flight Controller " + DrogonApplication.isAircraftConnected());
-
     if(isNotNull(flightController)) {
       flightController.setUpdateSystemStateCallback(new FlightControllerUpdateSystemStateCallback(){
         @Override
@@ -246,6 +244,7 @@ public class MapFragment extends Fragment {
           for(LatLng l: marked) {
             if(SphericalUtil.computeDistanceBetween(l, curr) < SameThreshold) {
               showToast("PASSING " + marked.indexOf(l));
+              capture();
             }
           }
           setHomeCoordinate();
@@ -342,6 +341,8 @@ public class MapFragment extends Fragment {
 
   @Subscribe
   public void onTakeOffClicked(TakeOffClicked clicked) {
+    chosenAltitude = mainActivity().getChosenAltitude();
+
     waypointMission.removeAllWaypoints();
 
     String listString = "";
@@ -408,9 +409,6 @@ public class MapFragment extends Fragment {
   private void stopWaypointMission(){
     if(isNotNull(missionManager)) {
       missionManager.stopMissionExecution(stopMissionExecutionCallback);
-      if(isNotNull(waypointMission)) {
-        waypointMission.removeAllWaypoints();
-      }
     }
   }
 
@@ -446,17 +444,17 @@ public class MapFragment extends Fragment {
     @Override
     public void onResult(DJIError error) {
       if(isNotNull(error)) {
-        missionDetails.setMissionStop();
-      }
-
-      if(isNotNull(writableDBMission)) {
-        final int rowId = addMissionToDB(writableDBMission);
-        getActivity().runOnUiThread(new Runnable() {
-          @Override
-          public void run() {
-            DrogonApplication.getBus().post(new MissionCompleted(rowId));
-          }
-        });
+        long durationInS = missionDetails.setMissionStop();
+        writableDBMission.setFlightDuration(durationInS);
+        if(isNotNull(writableDBMission)) {
+          final int rowId = addMissionToDB(writableDBMission);
+//        getActivity().runOnUiThread(new Runnable() {
+//          @Override
+//          public void run() {
+//            DrogonApplication.getBus().post(new MissionCompleted(rowId));
+//          }
+//        });
+        }
       }
       showNativeToast("Execution finished: " + (isNull(error) ? "Success" : error.getDescription()));
     }
@@ -503,12 +501,21 @@ public class MapFragment extends Fragment {
         public void run() {
           mainActivity().takeOffImageBtn.setImageResource(imgResource);
           if(isNull(error)) {
-            missionDetails.setMissionStop();
+            long durationInS = missionDetails.setMissionStop();
             mainActivity().clearWaypointsImageBtn.setEnabled(true);
+
+            writableDBMission.setFlightDuration(durationInS);
+            if(isNotNull(writableDBMission)) {
+              addMissionToDB(writableDBMission);
+            }
           }
           showToast("Mission Stopped: " + status);
         }
       });
+
+      if(isNotNull(waypointMission)) {
+        waypointMission.removeAllWaypoints();
+      }
     }
   };
 
@@ -517,6 +524,7 @@ public class MapFragment extends Fragment {
   }
 
   private void capture() {
+    writableDBMission.addNumPicsTaken();
     DJIBaseProduct product = DrogonApplication.getProductInstance();
     if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
       DJICamera camera = product.getCamera();
@@ -531,6 +539,7 @@ public class MapFragment extends Fragment {
               showToast("CAPTURED " + msg);
             }
           });
+
         }
       }
     }

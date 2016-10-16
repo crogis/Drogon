@@ -7,7 +7,7 @@
         <LinearLayout style="@style/ToolbarStartLayout">
             <TextView style="@style/ToolbarTextView"
                       android:id="@+id/connection_status_text_view"
-                      android:text="Disconnected"/>
+                      android:text="@string/disconnected"/>
         </LinearLayout>
         <LinearLayout style="@style/ToolbarEndLayout">
             <ImageView style="@style/ToolbarImageView"

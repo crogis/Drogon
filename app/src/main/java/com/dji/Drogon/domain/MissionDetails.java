@@ -16,11 +16,16 @@ public class MissionDetails {
     return inMission;
   }
 
+  private long startTime = 0;
+
   public void setMissionStart() {
+    startTime = System.currentTimeMillis();
     inMission = true;
   }
 
-  public void setMissionStop() {
+  public long setMissionStop() {
+    long endTime = System.currentTimeMillis();
     inMission = false;
+    return (endTime - startTime) / 1000;
   }
 }
