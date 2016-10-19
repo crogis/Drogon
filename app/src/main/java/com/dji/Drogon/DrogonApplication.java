@@ -54,8 +54,8 @@ public class DrogonApplication extends Application {
     //listens to the sdk registration result
     //checks the application registration status
     @Override
-    public void onGetRegisteredResult(DJIError djiError) {
-      if(djiError == DJISDKError.REGISTRATION_SUCCESS) {
+    public void onGetRegisteredResult(DJIError dji) {
+      if(dji == DJISDKError.REGISTRATION_SUCCESS) {
         onUIThread(
           new Runnable() {
             @Override
@@ -75,7 +75,7 @@ public class DrogonApplication extends Application {
             }
           }
         );
-      Log.e("TAG", djiError.toString());
+      Log.e("TAG", dji.toString());
     }
 
     //Listens to the connected product changing, including two parts, component changing or product connection_75 changing.
