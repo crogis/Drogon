@@ -1,5 +1,7 @@
 package com.dji.Drogon.fragment;
 
+//view na nakikita ng quad
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -68,12 +70,14 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     ButterKnife.bind(this, view);
 
     //Register BroadcastReceiver
+    //This receiver gets the connection change of the drone and the android application
     IntentFilter filter = new IntentFilter();
     filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE_FRAGMENT);
     getContext().registerReceiver(onConnectionChangeReceiver, filter);
 
     videoSurfaceTextureView.setSurfaceTextureListener(this);
 
+    //receives video data from your drone
     receivedVideoDataCallback = new DJICamera.CameraReceivedVideoDataCallback() {
       @Override
       public void onResult(byte[] videoBuffer, int size) {
@@ -92,7 +96,9 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   @Subscribe
   public void onFragmentChange(FragmentChange change) {
     System.out.println("ON FRAGMENT CHANGE " + videoSurfaceTextureView.getWidth());
+    //isMapFragmentMain = false
     isMapFragmentMain = change.getIsMapFragmentMain();
+
     if(isNotNull(codecManager)) {
       codecManager.cleanSurface();
       codecManager = null;
@@ -103,11 +109,13 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   public void onCaptureImageClicked(CaptureImageClicked clicked) {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
     if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+      //gets the camera of the product/drone
       DJICamera camera = product.getCamera();
       if(isNotNull(camera)) {
         CameraMode cameraMode = CameraMode.ShootPhoto;
         if(isNotNull(camera)) {
           CameraShootPhotoMode photoMode = CameraShootPhotoMode.Single;
+          //shoots photos
           camera.startShootPhoto(photoMode, new DJIBaseComponent.DJICompletionCallback() {
             @Override
             public void onResult(DJIError djiError) {
@@ -133,10 +141,12 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     Log.e(TAG, "onSurfaceTextureSizeChanged1 " + " width: " +  width + " width: " + height);
 
     boolean mainCondition = isNull(codecManager);
+    //initializes the codec manager is the CameraFragment is the main fragment OR if it's the subfragment
     boolean condition1 = mainCondition && !isMapFragmentMain && width == dimens.getWidth() && height == dimens.getHeight();
     boolean condition2 = mainCondition && isMapFragmentMain;
 
     if (condition1 || condition2) {
+      //DJICodecManager handles the pictures, yung kung ano yung nakikita ng camera ng drone
       codecManager = new DJICodecManager(getContext(), surface, width, height);
     }
   }

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          android:versionCode="1"
+          android:versionName="1.0"
           package="com.dji.Drogon">
 
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -20,10 +22,10 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-feature
         android:name="android.hardware.usb.host"
-        android:required="false" />
+        android:required="false"/>
     <uses-feature
         android:name="android.hardware.usb.accessory"
-        android:required="true" />
+        android:required="true"/>
 
 
     <application

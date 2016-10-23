@@ -17,8 +17,9 @@ public class FileHelper {
   static SimpleDateFormat dateFormatter = DateFormatter.getCompressedDateFormat();
 
   public static void initializeWaypointDirectory() {
-    System.out.println("DIRECTORY PATH " + MISSION_DIRECTORY_PATH);
     File directory = new File(MISSION_DIRECTORY_PATH);
+    //directory.mkdir() creates waypoint_mission directory in your phone
+    //returns true if the directory was created, false if the directory already exists
     if(directory.mkdir()) {
       System.out.println("Created directory!");
     } else System.out.println("Directory already exists");

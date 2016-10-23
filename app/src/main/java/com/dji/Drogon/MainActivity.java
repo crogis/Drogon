@@ -74,7 +74,10 @@ import dji.sdk.AirLink.DJILBAirLink;
 import dji.sdk.AirLink.DJISignalInformation;
 import dji.sdk.Battery.DJIBattery;
 import dji.sdk.Battery.DJIBattery.*;
+import dji.sdk.Camera.DJICamera;
 import dji.sdk.Camera.DJICameraSettingsDef;
+import dji.sdk.Camera.DJIMedia;
+import dji.sdk.Camera.DJIMediaManager;
 import dji.sdk.FlightController.DJIFlightController;
 import dji.sdk.FlightController.DJIFlightControllerDataType.*;
 import dji.sdk.FlightController.DJIFlightControllerDelegate;
@@ -104,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.settings_layout) RelativeLayout settingsLayout;
 
   @BindView(R.id.settings_image_button) ImageButton settingsImageBtn;
+
   @BindView(R.id.take_off_image_button) public ImageButton takeOffImageBtn;
   @BindView(R.id.clear_waypoints_image_button) public ImageButton clearWaypointsImageBtn;
   @BindView(R.id.capture_image_btn) ImageButton captureImageBtn;
@@ -121,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
   @BindView(R.id.dropdown_notification_layout) LinearLayout notificationLayout;
   @BindView(R.id.notification_text_view) TextView notificationTextView;
 
-  Boolean isMapFragmentMain = true;
+  Boolean isMapFragmentMain = true; //unang makikita na fragment
 
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
@@ -280,8 +284,13 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    /*
+      makes the app full screen
+     */
     getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
       WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+    //this is where you define the layout of the activity -> activity_main.xml
     setContentView(R.layout.activity_main);
 
     //used this library to shorten code https://github.com/JakeWharton/butterknife
@@ -292,11 +301,15 @@ public class MainActivity extends AppCompatActivity {
     takeOffImageBtn.setEnabled(false);
     captureImageBtn.setEnabled(false);
 
+
     Fragment cameraFragment = new CameraFragment();
     Fragment mapFragment = new MapFragment();
+
+    //adds the fragment to the main activity
     addFragmentToMain(mapFragment);
     addFragmentToSub(cameraFragment);
 
+    //creates waypoint_mission directory sa phone
     FileHelper.initializeWaypointDirectory();
 
 //    database.insertMission(new WritableDBMission(new Date(), 14.000, 121.000));
@@ -497,7 +510,8 @@ public class MainActivity extends AppCompatActivity {
   private void initializeToolbar() {
     // Sets the Toolbar to act as the ActionBar for this Activity window.
     // Make sure the toolbar exists in the activity and is not null
-    setSupportActionBar(toolbar);
+    setSupportActionBar(toolbar); //initializes the toolbar
+
     ActionBar actionBar = getSupportActionBar();
     if(isNotNull(actionBar)) {
       actionBar.setDisplayShowTitleEnabled(false);
@@ -510,6 +524,7 @@ public class MainActivity extends AppCompatActivity {
 
   @OnClick(R.id.take_off_image_button) void onTakeOffClicked() {
     if(missionDetails.isMissionInProgress()) {
+      //post communicates with the fragment
       DrogonApplication.getBus().post(new StopMissionClicked());
     }
     else {
@@ -539,23 +554,33 @@ public class MainActivity extends AppCompatActivity {
                     cp.height,
                     mainLayout.getWidth(),
                     cp.width);
+
     fillScreenAnimation.setAnimationListener(new Animation.AnimationListener() {
+      //start of the animation
       @Override public void onAnimationStart(Animation animation) {
+        // ! --> opposite
         isMapFragmentMain = !isMapFragmentMain;
-        if(!isMapFragmentMain) settingsLayout.setVisibility(View.VISIBLE);
+        if(!isMapFragmentMain) settingsLayout.setVisibility(View.VISIBLE);// if isMapFragmentMain false -> set the visibility of the settings layout to VISIBLE
+
+        //to communicate between fragment and activity
+        //nagsasabi na yung camera fragment na yung main
+        //isMapFragmentMain = false, yung main na ngayon is yung camera
         DrogonApplication.getBus().post(new FragmentChange(isMapFragmentMain));
       }
       @Override public void onAnimationRepeat(Animation animation) {}
+
+      //end of the animation
       @Override
       public void onAnimationEnd(Animation animation) {
+        //if isMapFragmentMain true, set the settingsLayout to View.INVISIBLE (hindi kita)
         if(isMapFragmentMain) settingsLayout.setVisibility(View.INVISIBLE);
-        switchViews(cp);
-        borderLayout.setEnabled(true);
+        switchViews(cp);//code na nagsasabi na palit na yung views
+        borderLayout.setEnabled(true); //
       }
     });
     fillScreenAnimation.setDuration(500);
     subLayout.startAnimation(fillScreenAnimation);
-    borderLayout.setEnabled(false);
+    borderLayout.setEnabled(false);//hindi mo pwede palitan yung view kapag nagsstart na siya sa animation
   }
 
   private void switchViews(CustomLayoutParams cp) {
@@ -610,6 +635,9 @@ public class MainActivity extends AppCompatActivity {
     exportButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+
+        fetchMediaFromDrone();
+
         validateServerAddress(editText.getText().toString().trim());
 
         List<ReadableDBMission> missions = database.getMissions();
@@ -682,6 +710,44 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekBar) {}
     });
     dialog.show();
+  }
+
+  private void fetchMediaFromDrone() {
+    DJIBaseProduct product = DrogonApplication.getProductInstance();
+    if(isNotNull(product.getModel()) && !product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+      DJICamera camera = product.getCamera();
+      if(isNotNull(camera) && isNotNull(camera.getMediaManager())) {
+        camera.getMediaManager().fetchMediaList(new DJIMediaManager.CameraDownloadListener<ArrayList<DJIMedia>>() {
+          @Override
+          public void onStart() {
+            showNativeToast("downloading media");
+          }
+
+          @Override
+          public void onRateUpdate(long l, long l1, long l2) {
+
+          }
+
+          @Override
+          public void onProgress(long l, long l1) {
+
+          }
+
+          @Override
+          public void onSuccess(ArrayList<DJIMedia> media) {
+            if(isNotNull(media)) {
+              showToast("Total files " + media.size());
+            }
+
+          }
+
+          @Override
+          public void onFailure(DJIError djiError) {
+            showNativeToast("failure to get media " + djiError.getDescription());
+          }
+        });
+      }
+    }
   }
 
   private void validateServerAddress(String ipAddress) {
@@ -867,6 +933,7 @@ public class MainActivity extends AppCompatActivity {
     IntentFilter filter = new IntentFilter();
     filter.addAction(DrogonApplication.FLAG_CONNECTION_CHANGE);
     registerReceiver(onConnectionChangeReceiver, filter);
+    //registerReceiver gets all the events related to FLAG_CONNECTION_CHANGE
 
     DrogonApplication.getBus().register(this);
   }

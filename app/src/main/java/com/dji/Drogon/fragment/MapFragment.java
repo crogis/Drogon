@@ -1,5 +1,6 @@
 package com.dji.Drogon.fragment;
 
+//stops the waypoint mission
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -53,6 +54,7 @@ import butterknife.ButterKnife;
 import dji.sdk.Camera.DJICamera;
 import dji.sdk.Camera.DJICameraSettingsDef;
 import dji.sdk.FlightController.DJIFlightController;
+import dji.sdk.FlightController.DJIFlightControllerDataType;
 import dji.sdk.FlightController.DJIFlightControllerDataType.*;
 import dji.sdk.FlightController.DJIFlightControllerDelegate.*;
 import dji.sdk.MissionManager.DJIMission;
@@ -73,8 +75,10 @@ public class MapFragment extends Fragment {
   @BindView(R.id.map_view) MapView mapView;
 
 //  private double droneLocationLat = 14.609592, droneLocationLng = 121.079647;
+//  private double droneLocationLat = 14.583646, droneLocationLng = 121.057146;
   private double droneLocationLat = 0, droneLocationLng = 0;
   private Marker droneMarker = null;
+  //dito mo nalalaman yung kung ano yung state ng drone (saan yung location niya)
   private DJIFlightController flightController;
 
   private GoogleMap googleMap;
@@ -84,7 +88,7 @@ public class MapFragment extends Fragment {
   WaypointMarkers markers = WaypointMarkers.getInstance();
   MissionDetails missionDetails = MissionDetails.getInstance();
 
-  private float missionSpeed = 1.0f;//10.0f;//1.0f; // 1m/s
+  private float missionSpeed = 1.0f;//10.0f;//1.0f; // 1m/s (max 15f)
   private DJIWaypointMissionFinishedAction missionFinishedAction = DJIWaypointMissionFinishedAction.GoHome;
   private DJIWaypointMissionHeadingMode missionHeadingMode = DJIWaypointMissionHeadingMode.Auto;
   private DJIWaypointMission waypointMission;
@@ -138,15 +142,16 @@ public class MapFragment extends Fragment {
         googleMap.setOnMapClickListener(mapClickListener);
 
         //todo remove this after testing
-//        googleMap.clear();
-//        droneLocationLat = 14.609592;
-//        droneLocationLng = 121.079647;
-//        cameraUpdate();
-//        LatLng point0 = new LatLng(droneLocationLat, droneLocationLng);
-//        markHome(point0);
+        googleMap.clear();
+        droneLocationLat = 14.583646;
+        droneLocationLng = 121.057146;
+        cameraUpdate();
+
+        //LatLng point0 = new LatLng(droneLocationLat, droneLocationLng);
+        //markHome(point0);
 
         //todo uncomment this
-        updateDroneLocation();
+//        updateDroneLocation();
         setHomeCoordinate();
       }
     });
@@ -156,16 +161,16 @@ public class MapFragment extends Fragment {
   private OnMapClickListener mapClickListener = new OnMapClickListener() {
     @Override
     public void onMapClick(LatLng point) {
-      if(DrogonApplication.isAircraftConnected() && checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
-        if (isNotNull(waypointMission)) {
-          markWaypoint(point);
-          showNativeToast("AddWaypoint");
-        }
-      } else {
-        showNativeToast("Unable to add waypoints");
-      }
+//      if(DrogonApplication.isAircraftConnected() && checkGpsCoordinates(droneLocationLat, droneLocationLng)) {
+//        if (isNotNull(waypointMission)) {
+//          markWaypoint(point);
+//          showNativeToast("AddWaypoint");
+//        }
+//      } else {
+//        showNativeToast("Unable to add waypoints");
+//      }
 
-//      markWaypoint(point);
+      markWaypoint(point);
     }
   };
 
@@ -231,6 +236,19 @@ public class MapFragment extends Fragment {
     }
 
     if(isNotNull(flightController)) {
+
+
+      DJIFlightControllerCurrentState state = flightController.getCurrentState();
+      if(isNotNull(state) && isNotNull(state.getAircraftLocation())) {
+        DJILocationCoordinate3D location = state.getAircraftLocation();
+        if(isNull(homeLatLng) && isNotNull(location)) {
+          droneLocationLat = location.getLatitude();
+          droneLocationLng = location.getLongitude();
+          showNativeToast("home ltlng is null " + droneLocationLat + " " + droneLocationLng);
+          setHomeCoordinate();
+        }
+      }
+
       flightController.setUpdateSystemStateCallback(new FlightControllerUpdateSystemStateCallback(){
         @Override
         public void onResult(DJIFlightControllerCurrentState state) {
@@ -267,6 +285,7 @@ public class MapFragment extends Fragment {
           cameraUpdate();
 //          hideNotification();
         } else if (!checkGpsCoordinates(droneLocationLat, droneLocationLng) && isNull(homeLatLng)){
+          showNativeToast("lat lng is invalid");
 //          showNotification("Drone Location Not Found");
         }
       }
@@ -370,10 +389,12 @@ public class MapFragment extends Fragment {
   @Subscribe
   public void onClearWaypointsClicked(ClearWaypointsClicked clicked) {
     markers.clear();
-
     marked.clear();
-
     waypointMission.removeAllWaypoints();
+
+    googleMap.clear();
+    markHome(homeLatLng);
+    cameraUpdate();
   }
 
   private void configWayPointMission(){

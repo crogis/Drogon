@@ -36,7 +36,7 @@ public class DrogonApplication extends Application {
   public void onCreate() {
     super.onCreate();
     mHandler = new Handler(Looper.getMainLooper());
-    //used to start SDK services and initiate SDK
+    //used to start SDK services and initiate SDK within the application
     DJISDKManager.getInstance().initSDKManager(this, mDJISDKManagerCallback);
   }
 
@@ -54,8 +54,8 @@ public class DrogonApplication extends Application {
     //listens to the sdk registration result
     //checks the application registration status
     @Override
-    public void onGetRegisteredResult(DJIError djiError) {
-      if(djiError == DJISDKError.REGISTRATION_SUCCESS) {
+    public void onGetRegisteredResult(DJIError result) {
+      if(result == DJISDKError.REGISTRATION_SUCCESS) {
         onUIThread(
           new Runnable() {
             @Override
@@ -64,10 +64,11 @@ public class DrogonApplication extends Application {
             }
           }
         );
+        //start to connect to drone
         DJISDKManager.getInstance().startConnectionToProduct();
       }
       else
-        onUIThread(
+        onUIThread( //if hindi maka connect sa net dito pupunta
           new Runnable() {
             @Override
             public void run() {
@@ -75,13 +76,14 @@ public class DrogonApplication extends Application {
             }
           }
         );
-      Log.e("TAG", djiError.toString());
+      Log.e("TAG", result.toString());
     }
 
     //Listens to the connected product changing, including two parts, component changing or product connection_75 changing.
     //checks the product connection_75 status and invoke the notifyStatusChange to notify status changes
     @Override
     public void onProductChanged(DJIBaseProduct oldProduct, DJIBaseProduct newProduct) {
+      //initializes the reference to your drone/product
       mProduct = newProduct;
       if(mProduct != null) {
         mProduct.setDJIBaseProductListener(mDJIBaseProductListener);
@@ -92,7 +94,7 @@ public class DrogonApplication extends Application {
 
   private DJIBaseProduct.DJIBaseProductListener mDJIBaseProductListener = new DJIBaseProduct.DJIBaseProductListener() {
     //checks the product component change status and invoke the notifyStatusChange to notify status changes
-    @Override
+    @Override //checks if the product is connected or not
     public void onComponentChange(DJIBaseProduct.DJIComponentKey key, DJIBaseComponent oldComponent, DJIBaseComponent newComponent) {
       if(newComponent != null) {
         newComponent.setDJIComponentListener(mDJIComponentListener);
@@ -146,9 +148,12 @@ public class DrogonApplication extends Application {
   private Runnable updateRunnable = new Runnable() {
     @Override
     public void run() {
+
+      //this will notify the MainActivity, MapFragment, and CameraFragment that the connection has changed
       Intent intent = new Intent(FLAG_CONNECTION_CHANGE);
       sendBroadcast(intent);
 
+      //
       Intent intent2 = new Intent(FLAG_CONNECTION_CHANGE_FRAGMENT);
       sendBroadcast(intent2);
     }
