@@ -74,7 +74,10 @@ import dji.sdk.AirLink.DJILBAirLink;
 import dji.sdk.AirLink.DJISignalInformation;
 import dji.sdk.Battery.DJIBattery;
 import dji.sdk.Battery.DJIBattery.*;
+import dji.sdk.Camera.DJICamera;
 import dji.sdk.Camera.DJICameraSettingsDef;
+import dji.sdk.Camera.DJIMedia;
+import dji.sdk.Camera.DJIMediaManager;
 import dji.sdk.FlightController.DJIFlightController;
 import dji.sdk.FlightController.DJIFlightControllerDataType.*;
 import dji.sdk.FlightController.DJIFlightControllerDelegate;
@@ -610,6 +613,7 @@ public class MainActivity extends AppCompatActivity {
     exportButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+        fetchMediaFromDrone();
         validateServerAddress(editText.getText().toString().trim());
 
         List<ReadableDBMission> missions = database.getMissions();
@@ -682,6 +686,45 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekBar) {}
     });
     dialog.show();
+  }
+
+
+  private void fetchMediaFromDrone() {
+    DJIBaseProduct product = DrogonApplication.getProductInstance();
+    if(isNotNull(product.getModel()) && !product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+      DJICamera camera = product.getCamera();
+      if(isNotNull(camera) && isNotNull(camera.getMediaManager())) {
+        camera.getMediaManager().fetchMediaList(new DJIMediaManager.CameraDownloadListener<ArrayList<DJIMedia>>() {
+          @Override
+          public void onStart() {
+            showNativeToast("downloading media");
+          }
+
+          @Override
+          public void onRateUpdate(long l, long l1, long l2) {
+
+          }
+
+          @Override
+          public void onProgress(long l, long l1) {
+
+          }
+
+          @Override
+          public void onSuccess(ArrayList<DJIMedia> media) {
+            if(isNotNull(media)) {
+              showToast("Total files " + media.size());
+            }
+
+          }
+
+          @Override
+          public void onFailure(DJIError djiError) {
+            showNativeToast("failure to get media " + djiError.getDescription());
+          }
+        });
+      }
+    }
   }
 
   private void validateServerAddress(String ipAddress) {

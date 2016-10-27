@@ -51,17 +51,24 @@
         <service android:name="dji.sdk.SDKManager.DJIGlobalService" >
         </service>
 
-        <activity android:name=".ConnectionActivity"
-                  android:screenOrientation="portrait">
-
-        </activity>
-        <activity android:name=".MainActivity"
-                  android:screenOrientation="landscape">
+        <activity
+          android:name=".SplashActivity"
+          android:theme="@style/SplashTheme"
+          android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".MainActivity"
+                  android:screenOrientation="landscape">
+        </activity>
+
+        <meta-data
+          android:name="io.fabric.ApiKey"
+          android:value="a48ecafcaadcd876ce5dc65fb15d2048336a633c"
+          />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

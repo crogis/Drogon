@@ -21,6 +21,9 @@ import dji.sdk.base.DJIError;
 import dji.sdk.base.DJIGimbalError;
 import dji.sdk.base.DJISDKError;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
+
 public class DrogonApplication extends Application {
 
   public static final String FLAG_CONNECTION_CHANGE = "drogon_connection_change";
@@ -36,6 +39,7 @@ public class DrogonApplication extends Application {
   public void onCreate() {
     super.onCreate();
     mHandler = new Handler(Looper.getMainLooper());
+    Fabric.with(this, new Crashlytics());
     //used to start SDK services and initiate SDK
     DJISDKManager.getInstance().initSDKManager(this, mDJISDKManagerCallback);
   }
