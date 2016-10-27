@@ -135,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
   private final String ALTITUDE_PREFERENCE = "altitude";
   private final String DRONE_ANGLE_PREFERENCE = "drone_angle";
   private final String IP_ADDRESS_PREFERENCE = "ip_address";
+  private final String LOCATION_PREFERENCE = "location";
 
   protected BroadcastReceiver onConnectionChangeReceiver = new BroadcastReceiver() {
     @Override
@@ -607,14 +608,20 @@ public class MainActivity extends AppCompatActivity {
     ImageButton closeButton = ButterKnife.findById(view, R.id.close_btn);//(ImageButton)v.findViewById(R.id.close_btn);
     SeekBar seekBar = ButterKnife.findById(view, R.id.angle_seek_bar);//(SeekBar) v.findViewById(R.id.angle_seek_bar);
     RadioGroup altitudeRadioGroup = ButterKnife.findById(view, R.id.altitude_radio_group);//(RadioGroup) v.findViewById(R.id.altitude_radio_group);
-    final EditText editText = ButterKnife.findById(view, R.id.ip_address_edit_text);
+    final EditText ipAddressEditText = ButterKnife.findById(view, R.id.ip_address_edit_text);
+    final EditText locationEditText = ButterKnife.findById(view, R.id.location_edit_text);
     Button exportButton = ButterKnife.findById(view, R.id.export_button);
 
     exportButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
         fetchMediaFromDrone();
-        validateServerAddress(editText.getText().toString().trim());
+
+        String location = locationEditText.getText().toString().trim();
+        if(location.length() > 0) putPreferenceString(LOCATION_PREFERENCE, location);
+        else removePreference(LOCATION_PREFERENCE);
+
+        validateServerAddress(ipAddressEditText.getText().toString().trim());
 
         List<ReadableDBMission> missions = database.getMissions();
         ArrayList<DirFile> dfs = new ArrayList<>();
@@ -652,7 +659,10 @@ public class MainActivity extends AppCompatActivity {
     closeButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        validateServerAddress(editText.getText().toString().trim());
+        validateServerAddress(ipAddressEditText.getText().toString().trim());
+        String location = locationEditText.getText().toString().trim();
+        if(location.length() > 0) putPreferenceString(LOCATION_PREFERENCE, location);
+        else removePreference(LOCATION_PREFERENCE);
         dialog.dismiss();
       }
     });
@@ -669,7 +679,11 @@ public class MainActivity extends AppCompatActivity {
 
     String ipAddress = getPreferenceString(IP_ADDRESS_PREFERENCE).trim();
     if(ipAddress.length() > 0)
-      editText.setText(ipAddress);
+      ipAddressEditText.setText(ipAddress);
+
+    String location = getPreferenceString(LOCATION_PREFERENCE).trim();
+    if(location.length() > 0)
+      locationEditText.setText(location);
 
     int prefAngle = getPreferenceInt(DRONE_ANGLE_PREFERENCE);
     int angle = prefAngle >= 0 ? prefAngle : 100;
