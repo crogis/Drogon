@@ -17,12 +17,13 @@ import android.widget.Toast;
 import com.dji.Drogon.DrogonApplication;
 import com.dji.Drogon.MainActivity;
 import com.dji.Drogon.R;
+import com.dji.Drogon.db.DrogonDatabase;
 import com.dji.Drogon.domain.Altitude;
+import com.dji.Drogon.domain.Picture;
 import com.dji.Drogon.domain.WritableDBMission;
 import com.dji.Drogon.domain.MissionDetails;
 import com.dji.Drogon.domain.WaypointMarkers;
 import com.dji.Drogon.event.ClearWaypointsClicked;
-import com.dji.Drogon.event.MissionCompleted;
 import com.dji.Drogon.event.StopMissionClicked;
 import com.dji.Drogon.event.WaypointAdded;
 import com.dji.Drogon.event.TakeOffClicked;
@@ -184,7 +185,7 @@ public class MapFragment extends Fragment {
     MarkerOptions markerOptions = new MarkerOptions();
     markerOptions.position(point);
     markerOptions.icon(BitmapDescriptorFactory.fromResource(pointResource));
-    markerOptions.anchor((float)0.5, (float)0.5);
+//    markerOptions.anchor((float)0.5, (float)0.5);
     Marker marker = googleMap.addMarker(markerOptions);
     markers.add(marker);
     //todo move this
@@ -244,12 +245,13 @@ public class MapFragment extends Fragment {
           for(LatLng l: marked) {
             if(SphericalUtil.computeDistanceBetween(l, curr) < SameThreshold) {
               showToast("PASSING " + marked.indexOf(l));
+              addPicture(droneLocationLat, droneLocationLng);
               capture();
             }
           }
           setHomeCoordinate();
           updateDroneLocation();
-          enableLeftSideButtons();
+//          enableLeftSideButtons();
         }
       });
     }
@@ -279,8 +281,9 @@ public class MapFragment extends Fragment {
       //Create MarkerOptions object
       final MarkerOptions markerOptions = new MarkerOptions();
       markerOptions.position(pos);
-      markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.drone_for_map));
-      markerOptions.anchor((float)0.5, (float)0.5);
+      markerOptions.icon(BitmapDescriptorFactory.defaultMarker());
+//      markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.drone_for_map));
+//      markerOptions.anchor((float)0.5, (float)0.5);
       getActivity().runOnUiThread(new Runnable() {
         @Override
         public void run() {
@@ -448,6 +451,7 @@ public class MapFragment extends Fragment {
         writableDBMission.setFlightDuration(durationInS);
         if(isNotNull(writableDBMission)) {
           final int rowId = addMissionToDB(writableDBMission);
+          addPictureEntryToDB(picturesTaken, rowId);
 //        getActivity().runOnUiThread(new Runnable() {
 //          @Override
 //          public void run() {
@@ -470,6 +474,8 @@ public class MapFragment extends Fragment {
     }
   };
 
+  ArrayList<Picture> picturesTaken = new ArrayList<>();
+
   private DJICompletionCallback startMissionExecutionCallback = new DJICompletionCallback() {
     @Override
     public void onResult(DJIError error) {
@@ -483,13 +489,21 @@ public class MapFragment extends Fragment {
 
       if(isNull(error)) {
         missionDetails.setMissionStart();
+        picturesTaken.clear();
 
-        if(isNotNull(homeLatLng))
-          writableDBMission = new WritableDBMission(new Date(), homeLatLng.latitude, homeLatLng.longitude);
+        if(isNotNull(homeLatLng)) {
+          addPicture(homeLatLng.latitude, homeLatLng.longitude);
+          capture();
+          writableDBMission = new WritableDBMission(new Date(), homeLatLng.latitude, homeLatLng.longitude, (int)chosenAltitude.getAltitude());
+        }
       }
       showToast("Mission Started: " + (isNull(error) ? "Success" : error.getDescription()));
     }
   };
+
+  private void addPicture(double lat, double lng) {
+    picturesTaken.add(new Picture(new Date(), lat, lng));
+  }
 
   private DJICompletionCallback stopMissionExecutionCallback = new DJICompletionCallback() {
     @Override
@@ -523,8 +537,15 @@ public class MapFragment extends Fragment {
     return mainActivity().database.insertMission(mission);
   }
 
+  private void addPictureEntryToDB(List<Picture> pictures, int missionId) {
+    DrogonDatabase db = mainActivity().database;
+
+    for(Picture p: pictures) {
+      db.insertPictureEntry(p, missionId);
+    }
+  }
+
   private void capture() {
-    writableDBMission.addNumPicsTaken();
     DJIBaseProduct product = DrogonApplication.getProductInstance();
     if(!product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
       DJICamera camera = product.getCamera();

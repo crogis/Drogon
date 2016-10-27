@@ -1,20 +1,23 @@
 package com.dji.Drogon.domain;
 
 import java.util.Date;
+import java.util.List;
 
 public class ReadableDBMission {
 
-  private int missionId, flightDuration, numPicsTaken;
+  private int missionId, flightDuration, altitude;
   private Date dateTime;
   private double homeLat, homeLng;
+  private List<Picture> pictures;
 
-  public ReadableDBMission(int missionId, Date dateTime, int flightDuration, int numPicsTaken, double homeLat, double homeLng) {
+  public ReadableDBMission(int missionId, Date dateTime, int flightDuration, int altitude, double homeLat, double homeLng, List<Picture> pictures) {
     this.missionId = missionId;
     this.dateTime = dateTime;
     this.flightDuration = flightDuration;
-    this.numPicsTaken = numPicsTaken;
+    this.altitude = altitude;
     this.homeLat = homeLat;
     this.homeLng = homeLng;
+    this.pictures = pictures;
   }
 
   public int getMissionId() {
@@ -29,8 +32,8 @@ public class ReadableDBMission {
     return flightDuration;
   }
 
-  public int getNumPicsTaken() {
-    return numPicsTaken;
+  public int getAltitude() {
+    return altitude;
   }
 
   public double getHomeLat() {
@@ -39,5 +42,9 @@ public class ReadableDBMission {
 
   public double getHomeLng() {
     return homeLng;
+  }
+
+  public List<Picture> getPictures() {
+    return pictures;
   }
 }

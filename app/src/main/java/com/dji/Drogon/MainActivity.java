@@ -37,6 +37,7 @@ import com.dji.Drogon.anim.ExpandCollapseAnimation;
 import com.dji.Drogon.anim.FillScreenAnimation;
 import com.dji.Drogon.db.DrogonDatabase;
 import com.dji.Drogon.domain.Altitude;
+import com.dji.Drogon.domain.Picture;
 import com.dji.Drogon.domain.ReadableDBMission;
 import com.dji.Drogon.domain.FileDirectory;
 import com.dji.Drogon.domain.MainLayoutDimens;
@@ -59,6 +60,7 @@ import com.squareup.otto.Subscribe;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -303,13 +305,31 @@ public class MainActivity extends AppCompatActivity {
 
     FileHelper.initializeWaypointDirectory();
 
-//    database.insertMission(new WritableDBMission(new Date(), 14.000, 121.000));
+//    int rowId = database.insertMission(new WritableDBMission(new Date(), 14.000, 121.000, 10));
+//
+//    ArrayList<Picture> pictures = new ArrayList<>();
+//    pictures.add(new Picture(new Date(), 14.00, 15.00));
+//    pictures.add(new Picture(new Date(), 14.01, 16.00));
+//    pictures.add(new Picture(new Date(), 14.02, 17.00));
+//    pictures.add(new Picture(new Date(), 14.03, 18.00));
+//    pictures.add(new Picture(new Date(), 14.04, 19.00));
+//
+//    for(Picture p: pictures) {
+//      database.insertPictureEntry(p, rowId);
+//    }
 //    System.out.println("MISSIONZ size " + database.getMissions().size());
-
-//    List<WritableDBMission> missions = database.getMissions();
+//
+//    List<ReadableDBMission> missions = database.getMissions();
 //    System.out.println("READING DATABASE " + missions.size());
-//    for(int i = 0; i < missions.size(); i++) {
-//      System.out.println(missions.get(i).getMissionId());
+//
+//    for(ReadableDBMission mission: missions) {
+//      List<Picture> rPictures = mission.getPictures();
+//      System.out.println("mission pictures " + rPictures.size());
+//      for(Picture p: rPictures) {
+//        System.out.println("picture " + p.getDateTime() + "," + p.getLat() + "," + p.getLng());
+//      }
+//      String csvContent = CSVWriter.generateFromDBMission(mission);
+//      System.out.println("CSV \n" + csvContent);
 //    }
 
 //    simulateCSV();
@@ -326,23 +346,23 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public void simulateCSV() {
-    Date now = new Date();
-    ReadableDBMission mission = new ReadableDBMission(1, now, 1, 1, 100.00, 200.00);
-
-    FileDirectory fd = new FileDirectory(now);
-    String parent = fd.getSubDirectoryPath();
-    System.out.println("SUB DIRECTORY PATH " + parent);
-    FileHelper.createWaypointSubDirectory(parent);
-
-    String csvContent = CSVWriter.generateFromDBMission(mission);
-    System.out.println("CONTENT " + csvContent);
-
-    String csvFilePath = fd.getCSVFilePath();
-    System.out.println("CSV FILE PATH " + csvFilePath);
-    File csvFile = new File(csvFilePath);
-    FileHelper.writeToFile(csvFile, csvContent);
-
-    sendToServer(csvFile, fd.getBaseFileName());
+//    Date now = new Date();
+//    ReadableDBMission mission = new ReadableDBMission(1, now, 1, 1, 100.00, 200.00);
+//
+//    FileDirectory fd = new FileDirectory(now);
+//    String parent = fd.getSubDirectoryPath();
+//    System.out.println("SUB DIRECTORY PATH " + parent);
+//    FileHelper.createWaypointSubDirectory(parent);
+//
+//    String csvContent = CSVWriter.generateFromDBMission(mission);
+//    System.out.println("CONTENT " + csvContent);
+//
+//    String csvFilePath = fd.getCSVFilePath();
+//    System.out.println("CSV FILE PATH " + csvFilePath);
+//    File csvFile = new File(csvFilePath);
+//    FileHelper.writeToFile(csvFile, csvContent);
+//
+//    sendToServer(csvFile, fd.getBaseFileName());
   }
 
   private void sendToServer(final File csvFile, final String dirName) {
