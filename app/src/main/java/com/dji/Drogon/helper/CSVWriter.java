@@ -14,7 +14,7 @@ public class CSVWriter {
   private static SimpleDateFormat dateFormat = DateFormatter.getReadableDateFormat();
 
   //int missionId, Date dateTime, int flightDuration, int numPicsTaken, double homeLat, double homeLng
-  public static String generateFromDBMission(ReadableDBMission mission, String location) {
+  public static String generateFromDBMission(ReadableDBMission mission) {
     String missionId = String.valueOf(mission.getMissionId());
     String dateTime = dateFormat.format(mission.getDateTime());
     String flightDuration = String.valueOf(mission.getFlightDuration());
@@ -31,7 +31,7 @@ public class CSVWriter {
       String now = dateFormat.format(p.getDateTime());
       String lat = String.valueOf(p.getLat());
       String lng = String.valueOf(p.getLng());
-      String[] arr = new String[]{id, now, lat, lng, altitude, flightDuration, location};
+      String[] arr = new String[]{id, now, lat, lng, altitude, flightDuration};
       s = s + TextUtils.join(COMMA_SEPARATOR, arr) + "\n";
     }
 //    String[] arr = new String[]{missionId, dateTime, flightDuration, numPicsTaken, homeLat, homeLng};

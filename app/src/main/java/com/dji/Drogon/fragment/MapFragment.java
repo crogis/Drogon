@@ -492,8 +492,8 @@ public class MapFragment extends Fragment {
         picturesTaken.clear();
 
         if(isNotNull(homeLatLng)) {
-          addPicture(homeLatLng.latitude, homeLatLng.longitude);
-          capture();
+//          addPicture(homeLatLng.latitude, homeLatLng.longitude);
+//          capture();
           writableDBMission = new WritableDBMission(new Date(), homeLatLng.latitude, homeLatLng.longitude, (int)chosenAltitude.getAltitude());
         }
       }
