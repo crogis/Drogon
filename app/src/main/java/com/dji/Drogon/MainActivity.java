@@ -328,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
 //      for(Picture p: rPictures) {
 //        System.out.println("picture " + p.getDateTime() + "," + p.getLat() + "," + p.getLng());
 //      }
-//      String csvContent = CSVWriter.generateFromDBMission(mission);
+//      String csvContent = CSVWriter.generateFromDBMission(mission, "Pasig");
 //      System.out.println("CSV \n" + csvContent);
 //    }
 
@@ -654,7 +654,7 @@ public class MainActivity extends AppCompatActivity {
           File[] files = new File(parent).listFiles();
           System.out.println("NUM FILES " + files.length);
 
-          String csvContent = CSVWriter.generateFromDBMission(mission);
+          String csvContent = CSVWriter.generateFromDBMission(mission, location);
           System.out.println("CONTENT " + csvContent);
 
           String csvFilePath = fd.getCSVFilePath();
@@ -725,7 +725,7 @@ public class MainActivity extends AppCompatActivity {
 
   private void fetchMediaFromDrone() {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
-    if(isNotNull(product.getModel()) && !product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
+    if(isNotNull(product) && isNotNull(product.getModel()) && !product.getModel().equals(DJIBaseProduct.Model.UnknownAircraft)) {
       DJICamera camera = product.getCamera();
       if(isNotNull(camera) && isNotNull(camera.getMediaManager())) {
         camera.getMediaManager().fetchMediaList(new DJIMediaManager.CameraDownloadListener<ArrayList<DJIMedia>>() {

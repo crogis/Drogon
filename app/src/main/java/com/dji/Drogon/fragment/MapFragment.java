@@ -213,7 +213,7 @@ public class MapFragment extends Fragment {
     public void missionProgressStatus(DJIMissionProgressStatus status) {}
   };
 
-  double SameThreshold = 0.1;
+  double SameThreshold = 0.50;
   //initializes flight controller and mission manager
   private void initializeDJI() {
     DJIBaseProduct product = DrogonApplication.getProductInstance();
