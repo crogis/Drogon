@@ -60,6 +60,9 @@ import com.squareup.otto.Subscribe;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -511,6 +514,27 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
+  private ArrayList<File> matchPicToDB(List<Picture> p, List<File> f) {
+    ArrayList<File> f1s = new ArrayList<>();
+    for(int i = 0; i < p.size(); i++) {
+      for(int j = 0; j < f.size(); j++) {
+        Picture p1 = p.get(i);
+        File f1 = f.get(j);
+        File f2 = new File(p1.getLat() + p1.getLng() + "");
+        try {
+          FileInputStream fs2 = new FileInputStream(f1);
+          FileOutputStream fs1 = new FileOutputStream(f2);
+          try {
+            fs1.write(fs2.read());
+            f1s.add(f2);
+          } catch (IOException e){
+          }
+        } catch (FileNotFoundException e){
+        }
+      }
+    }
+    return f1s;
+  }
 
   private void showSendingErrorToast(final String msg) {
     hideNotification();
